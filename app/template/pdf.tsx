@@ -8,6 +8,7 @@ interface PdfProps {
     date: string;
     description: string;
     accountNumber: string;
+    url: string;
 };
 
 export default function Pdf({
@@ -16,7 +17,8 @@ export default function Pdf({
     amount,
     date,
     description,
-    accountNumber
+    accountNumber,
+    url
 }: PdfProps) {
     const styles = StyleSheet.create({
         page: {
@@ -103,6 +105,9 @@ export default function Pdf({
                     <Text style={styles.header}>Årsak til utlegg:</Text>
                     <Text style={styles.text}>{description}</Text>
                 </View>
+            </Page>
+            <Page size="A4" style={styles.page}>
+                <Image src={url} />
             </Page>
         </Document>
     );

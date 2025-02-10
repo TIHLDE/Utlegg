@@ -9,7 +9,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         const response = NextResponse.next();
 
 		const token = request.cookies.get(SESSION_NAME)?.value ?? null;
-		console.log("CHECKING TOKEN IN MIDDLEWARE: ", token);
 
 		// Redirect to login page if session token is not set with redirect URL
 		if (!token) {

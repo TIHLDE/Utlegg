@@ -2,9 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/auth/actions";
-import { getUncachedCurrentSession } from "@/lib/auth/auth";
 import { Loader2, LogOut } from "lucide-react";
-import { startTransition, useState } from "react";
+import { useState } from "react";
 
 
 export default function Logout() {
@@ -14,16 +13,11 @@ export default function Logout() {
       setStatus("pending");
 
       await logout();
-      await getUncachedCurrentSession();
-  
-    //   startTransition(async () => {
-    //     await logout();
-    //   });
     };
 
     return (
       <Button
-        variant="outline"
+        variant="basic"
         size="icon"
         onClick={handleLogout}
       >

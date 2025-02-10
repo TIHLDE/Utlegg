@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { format, set } from "date-fns";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { nb } from "date-fns/locale";
 import { toast } from "sonner";
+import FileUpload from "./file-upload";
+import { useState } from "react";
 
 const Schema = z.object({
     name: z.string().nonempty(),
@@ -23,15 +25,24 @@ const Schema = z.object({
     date: z.date(),
     description: z.string().nonempty(),
     accountNumber: z.string().length(11),
-    // receipt: z.array(z.string()),
+    receipt: z.string().url(),
 });
 
-export default function SendForm() {
+interface SendFormProps {
+    userToken: string;
+};
+
+export default function SendForm({
+    userToken
+}: SendFormProps) {
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    
     const form = useForm<z.infer<typeof Schema>>({
         resolver: zodResolver(Schema),
     });
 
     const onSubmit = async (values: z.infer<typeof Schema>) => {
+        setIsLoading(true);
         try {
             const data = new FormData();
             data.append("name", values.name);
@@ -40,6 +51,7 @@ export default function SendForm() {
             data.append("date", values.date.toISOString());
             data.append("description", values.description);
             data.append("accountNumber", values.accountNumber);
+            data.append("receipt", values.receipt);
 
             const response = await fetch("/api/send", {
                 method: "POST",
@@ -51,17 +63,28 @@ export default function SendForm() {
             }
             
             toast.success("Utleggskjemaet ble sendt inn!");
+            form.reset({
+                name: "",
+                email: "",
+                amount: "",
+                date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
+                description: "",
+                accountNumber: "",
+                receipt: ""
+            });
         } catch (error) {
             if (error instanceof Error) {
                 toast.error(error.message);
             } else {
                 toast.error("Det skjedde en feil. Prøv igjen senere.");
             }
-        };
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
-        <Card className="w-full max-w-3xl">
+        <Card className="w-full max-w-5xl">
             <CardHeader>
                 <CardTitle>
                     Send utleggskjema til TIHLDE!
@@ -223,11 +246,23 @@ export default function SendForm() {
                             )}
                         /> 
 
+                        <FileUpload
+                            form={form}
+                            name="receipt"
+                            userToken={userToken}
+                        /> 
+
                         <Button
                             type="submit"
                             className="w-full"
+                            disabled={isLoading}
+                            variant="action"
+                            size="lg"
                         >
-                            Send inn utleggskjema
+                            {isLoading
+                                ? <Loader2 className="animate-spin" />
+                                : "Send inn utleggskjema"
+                            }
                         </Button>
                     </form>
                 </Form>

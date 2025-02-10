@@ -19,7 +19,7 @@ export function ThemeToggle() {
 
   return (
     <Button
-        variant="outline"
+        variant="basic"
         size="icon"
         onClick={toggleTheme}
     >

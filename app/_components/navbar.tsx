@@ -12,7 +12,7 @@ export default function Navbar({
     return (
         <header className="flex items-center justify-between py-4 px-6">
             <h1 className="text-2xl font-bold">
-                QuickSend
+                TIHLDE Utlegg
             </h1>
 
             <div className="flex items-center space-x-2">

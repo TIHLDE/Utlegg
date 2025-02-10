@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { SigninInputSchema } from "./schema";
-import { deleteSessionTokenCookie, getCurrentSession, setSessionTokenCookie } from "./auth";
+import { deleteSessionTokenCookie, setSessionTokenCookie } from "./auth";
 import { redirect } from "next/navigation";
 
 
@@ -29,8 +29,6 @@ export async function login(
   
     const { username, password } = parsed.data;
 
-    console.log("LOGIN: ", username, password);
-  
     // Call Lepton API
     try {
         const response = await fetch("https://api.tihlde.org/auth/login/", {
@@ -42,7 +40,6 @@ export async function login(
         });
 
         const data = await response.json();
-        console.log(data)
         if (!response.ok) {
             throw new Error(data.detail);
         }

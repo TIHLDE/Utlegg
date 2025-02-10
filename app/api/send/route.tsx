@@ -3,22 +3,79 @@
 import ReactPDF from "@react-pdf/renderer";
 
 import Pdf from "../../template/pdf";
+import { v4 as uuidv4 } from "uuid";
+import { resend } from "@/lib/resend";
+import path from "path";
+import fs from 'fs/promises';
 
 
 export async function POST(req: Request) {
-    const formData = await req.formData();
+    try {
+        const formData = await req.formData();
+    
+        const name = formData.get("name") as string;
+        const email = formData.get("email") as string;
+        const amount = formData.get("amount") as string;
+        const date = formData.get("date") as string;
+        const description = formData.get("description") as string;
+        const accountNumber = formData.get("accountNumber") as string;
+        const url = formData.get("receipt") as string;
+    
+        const uuid = uuidv4();
+        const storePath = path.join(process.cwd(), "public");
+        const fileName = `${email}_${uuid}.pdf`;
+        const fullPath = path.join(storePath, fileName);
+    
+        await ReactPDF.render(
+            <Pdf
+                name={name}
+                email={email}
+                amount={amount}
+                date={date}
+                description={description}
+                accountNumber={accountNumber}
+                url={url}
+            />,
+            fullPath
+        );
 
-    ReactPDF.render(
-        <Pdf
-            name={formData.get("name") as string}
-            email={formData.get("email") as string}
-            amount={formData.get("amount") as string}
-            date={formData.get("date") as string}
-            description={formData.get("description") as string}
-            accountNumber={formData.get("accountNumber") as string}
-        />,
-        `pdfs/test.pdf`
-    );
+        const file = await fs.readFile(fullPath);
+
+        const { error } = await resend.emails.send({
+            from: "TIHLDE Utlegg <updates@quicksend.tihlde.org>",
+            to: "finansminister@tihlde.org",
+            subject: "Utlegg fra TIHLDE",
+            text: `Hei Finansminister!,\n\n${name} har sendt inn en kvitteringen for et utlegg.\n\n Epost: ${email}\n\nMvh\nTIHLDE Quicksend`,
+            attachments: [
+                {
+                    content: file.toString("base64"),
+                    filename: "utlegg.pdf",
+                }
+            ]
+        });
+
+        // Send copy to user
+        const { error: userError } = await resend.emails.send({
+            from: "TIHLDE Utlegg <updates@quicksend.tihlde.org>",
+            to: email,
+            subject: "Kvittering for utlegg",
+            text: `Hei ${name},\n\nHer er kvitteringen for utlegget ditt.\n\nMvh\nTIHLDE Quicksend`,
+            attachments: [
+                {
+                    content: file.toString("base64"),
+                    filename: "utlegg.pdf",
+                }
+            ]
+        });
+
+        if (error || userError) {
+            return new Response(null, { status: 500 });
+        }
+
+        await fs.unlink(fullPath);
+    } catch (e) {
+        return new Response(null, { status: 500 });
+    };
 
     return new Response(null, { status: 200 });
 };

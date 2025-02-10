@@ -7,8 +7,7 @@ import LoginForm from "./_components/form";
 
 export default async function LoginPage() {
     const token = await getCurrentSession();
-    // console.log("CHECKING TOKEN IN LOGIN: ", token);
-    // if (token) redirect("/");
+    if (token) redirect("/");
 
     return (
         <div className="max-w-3xl w-full mx-auto py-12">
