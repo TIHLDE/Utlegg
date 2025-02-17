@@ -17,7 +17,7 @@ export default function Logout() {
 
     return (
       <Button
-        variant="basic"
+        variant="action"
         size="icon"
         onClick={handleLogout}
       >

@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TIHLDE Quicksend",
+  title: "TIHLDE Utlegg",
   description: "Created by Mads Nylund",
 };
 
@@ -36,7 +36,7 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          forcedTheme="dark"
           enableSystem
           disableTransitionOnChange
         >

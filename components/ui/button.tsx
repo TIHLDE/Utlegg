@@ -21,7 +21,7 @@ const buttonVariants = cva(
         action:
           "bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-950 text-white",
         basic:
-          "border border-blue-700/30 bg-blue-50/80 text-blue-700 shadow-xl shadow-blue-200/60 hover:bg-blue-50 hover:opacity-90 dark:bg-gradient-to-br dark:shadow-blue-500/30 dark:from-sky-300/80 dark:to-blue-400/80 dark:text-blue-500 dark:ring-1 dark:ring-blue-500/30",
+          "bg-gradient-to-br ring-1 rounded-xl shadow-blue-500/30 from-sky-300/80 to-blue-500/80 dark:from-sky-400/80 dark:to-blue-600/80 text-blue-500 ring-blue-500/30 mx-auto dark:text-white text-blue-900"
       },
       size: {
         default: "h-10 px-4 py-2",

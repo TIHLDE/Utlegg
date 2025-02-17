@@ -10,13 +10,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format, set } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Trash } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { nb } from "date-fns/locale";
 import { toast } from "sonner";
 import FileUpload from "./file-upload";
 import { useState } from "react";
+import Image from "next/image";
+import type { User } from "@/types";
 
 const Schema = z.object({
     name: z.string().nonempty(),
@@ -25,20 +27,26 @@ const Schema = z.object({
     date: z.date(),
     description: z.string().nonempty(),
     accountNumber: z.string().length(11),
-    receipt: z.string().url(),
 });
 
 interface SendFormProps {
     userToken: string;
+    user: User | null;
 };
 
 export default function SendForm({
-    userToken
+    userToken,
+    user
 }: SendFormProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [images, setImages] = useState<string[]>([]);
     
     const form = useForm<z.infer<typeof Schema>>({
         resolver: zodResolver(Schema),
+        defaultValues: {
+            name: user?.first_name + " " + user?.last_name || "",
+            email: user?.email || "",
+        }
     });
 
     const onSubmit = async (values: z.infer<typeof Schema>) => {
@@ -51,7 +59,10 @@ export default function SendForm({
             data.append("date", values.date.toISOString());
             data.append("description", values.description);
             data.append("accountNumber", values.accountNumber);
-            data.append("receipt", values.receipt);
+            data.append("receipts", JSON.stringify(images));
+            data.append("username", user?.user_id || "");
+            data.append("study", user?.study.group.name || "");
+            data.append("year", user?.studyyear.group.name || "");
 
             const response = await fetch("/api/send", {
                 method: "POST",
@@ -63,6 +74,7 @@ export default function SendForm({
             }
             
             toast.success("Utleggskjemaet ble sendt inn!");
+            setImages([]);
             form.reset({
                 name: "",
                 email: "",
@@ -70,7 +82,6 @@ export default function SendForm({
                 date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
                 description: "",
                 accountNumber: "",
-                receipt: ""
             });
         } catch (error) {
             if (error instanceof Error) {
@@ -82,6 +93,10 @@ export default function SendForm({
             setIsLoading(false);
         }
     };
+
+    const removeImage = (url: string) => {
+        setImages((prev) => prev.filter((img) => img !== url));
+    }
 
     return (
         <Card className="w-full max-w-5xl">
@@ -110,6 +125,7 @@ export default function SendForm({
                                         </FormLabel>
                                         <FormControl>
                                             <Input
+                                                className="bg-background"
                                                 {...field}
                                                 required
                                             />
@@ -129,6 +145,7 @@ export default function SendForm({
                                         </FormLabel>
                                         <FormControl>
                                             <Input
+                                                className="bg-background"
                                                 {...field}
                                                 required
                                                 type="email"
@@ -151,6 +168,7 @@ export default function SendForm({
                                         </FormLabel>
                                         <FormControl>
                                             <Input
+                                                className="bg-background"
                                                 {...field}
                                                 required
                                             />
@@ -170,6 +188,7 @@ export default function SendForm({
                                         </FormLabel>
                                         <FormControl>
                                             <Input
+                                                className="bg-background"
                                                 {...field}
                                                 required
                                                 type="number"
@@ -202,7 +221,7 @@ export default function SendForm({
                                             {field.value ? (
                                                 format(field.value, "PPP")
                                             ) : (
-                                                <span>Pick a date</span>
+                                                <span>Velg en dato</span>
                                             )}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
@@ -238,7 +257,7 @@ export default function SendForm({
                                         <Textarea
                                             {...field}
                                             required
-                                            className="resize-none"
+                                            className="resize-none min-h-40"
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -247,23 +266,46 @@ export default function SendForm({
                         /> 
 
                         <FileUpload
-                            form={form}
-                            name="receipt"
                             userToken={userToken}
+                            setImgs={setImages}
                         /> 
 
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={isLoading}
-                            variant="action"
-                            size="lg"
-                        >
-                            {isLoading
-                                ? <Loader2 className="animate-spin" />
-                                : "Send inn utleggskjema"
-                            }
-                        </Button>
+                        {images.length > 0 && (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {images.map((url, index) => (
+                                    <div key={index} className="relative">
+                                        <Image
+                                            src={url}
+                                            alt="receipt"
+                                            height={200}
+                                            width={400}
+                                        />
+                                        <button
+                                            onClick={() => removeImage(url)}
+                                            type="button"
+                                            className="absolute top-2 right-2 p-1 bg-red-500 rounded-full"
+                                        >
+                                            <Trash className="text-white" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="pt-4 md:pt-6">
+                            <Button
+                                className="w-full md:w-auto"
+                                type="submit"
+                                disabled={isLoading}
+                                variant="action"
+                                size="lg"
+                            >
+                                {isLoading
+                                    ? <Loader2 className="animate-spin" />
+                                    : "Send inn utleggskjema"
+                                }
+                            </Button>
+                        </div>
                     </form>
                 </Form>
             </CardContent>

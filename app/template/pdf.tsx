@@ -8,7 +8,8 @@ interface PdfProps {
     date: string;
     description: string;
     accountNumber: string;
-    url: string;
+    urls: string[];
+    signature: string;
 };
 
 export default function Pdf({
@@ -18,7 +19,8 @@ export default function Pdf({
     date,
     description,
     accountNumber,
-    url
+    urls,
+    signature
 }: PdfProps) {
     const styles = StyleSheet.create({
         page: {
@@ -71,6 +73,17 @@ export default function Pdf({
             top: 20,
             left: 20,
             fontWeight: 'extrabold'
+        },
+        bottomLeftBox: {
+            position: 'absolute',
+            bottom: 20,
+            left: 20,
+            padding: 10,
+            border: '1px solid #000',
+            fontSize: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
         }
     });
 
@@ -105,10 +118,16 @@ export default function Pdf({
                     <Text style={styles.header}>Årsak til utlegg:</Text>
                     <Text style={styles.text}>{description}</Text>
                 </View>
+                <View style={styles.bottomLeftBox}>
+                    <Text>Signatur:</Text>
+                    <Text>{signature}</Text>
+                </View>
             </Page>
-            <Page size="A4" style={styles.page}>
-                <Image src={url} />
-            </Page>
+            {urls.map((url, index) => (
+                <Page key={index} size="A4" style={styles.page}>
+                    <Image src={url} />
+                </Page>
+            ))}
         </Document>
     );
 };

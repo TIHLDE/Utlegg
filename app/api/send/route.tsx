@@ -19,8 +19,13 @@ export async function POST(req: Request) {
         const date = formData.get("date") as string;
         const description = formData.get("description") as string;
         const accountNumber = formData.get("accountNumber") as string;
-        const url = formData.get("receipt") as string;
-    
+        const urls = formData.get("receipts") as string;
+        const username = formData.get("username") as string;
+        const study = formData.get("study") as string;
+        const year = formData.get("year") as string;
+
+        const urlsArray = JSON.parse(urls) as string[];    
+
         const uuid = uuidv4();
         const storePath = path.join(process.cwd(), "public");
         const fileName = `${email}_${uuid}.pdf`;
@@ -34,7 +39,8 @@ export async function POST(req: Request) {
                 date={date}
                 description={description}
                 accountNumber={accountNumber}
-                url={url}
+                urls={urlsArray}
+                signature={`${username}: ${study} - ${year}`}
             />,
             fullPath
         );
