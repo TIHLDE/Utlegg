@@ -79,7 +79,7 @@ export async function POST(req: Request) {
         }
 
         await fs.unlink(fullPath);
-    } catch (e) {
+    } catch {
         return new Response(null, { status: 500 });
     };
 

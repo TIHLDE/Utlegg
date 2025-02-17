@@ -2,7 +2,6 @@
 
 import Logo from "@/app/_components/logo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { login } from "@/lib/auth/actions";
@@ -43,7 +42,7 @@ export default function LoginForm() {
         toast.success("Du er nå logget inn.");
         setDisabled(true);
         router.push("/");
-      } catch (error) {
+      } catch {
         toast.error("Det oppstod en feil under innlogging. Prøv igjen senere.");
       } finally {
         setStatus("idle");
