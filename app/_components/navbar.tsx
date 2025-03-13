@@ -18,11 +18,10 @@ export default function Navbar({
                 <h1 className="text-xl md:text-2xl font-bold">
                     Utlegg
                 </h1>
-            </div> 
+            </div>
 
             <div className="flex items-center space-x-2">
                 {/* <ThemeToggle /> */}
-                <LinkedinNavigation />
                 {isAuthenticated && <Logout />}
             </div>
         </header>
