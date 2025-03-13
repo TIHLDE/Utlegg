@@ -1,6 +1,5 @@
 import Logout from "./logout";
 import Logo from "./logo";
-import LinkedinNavigation from "./linkedin";
 
 
 interface NavbarProps {

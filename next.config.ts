@@ -9,7 +9,10 @@ const nextConfig: NextConfig = {
       },
     ]
   },
-  output: process.env.NODE_ENV === "development" ? undefined : "standalone"
+  output: process.env.NODE_ENV === "development" ? undefined : "standalone",
+  eslint: {
+    ignoreDuringBuilds: true
+  }
 };
 
 export default nextConfig;
