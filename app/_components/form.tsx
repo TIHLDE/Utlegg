@@ -19,6 +19,7 @@ import FileUpload from "./file-upload";
 import { useState } from "react";
 import Image from "next/image";
 import type { User } from "@/types";
+import { Label } from "@/components/ui/label";
 
 const Schema = z.object({
     name: z.string().nonempty(),
@@ -30,12 +31,10 @@ const Schema = z.object({
 });
 
 interface SendFormProps {
-    userToken: string;
     user: User | null;
 };
 
 export default function SendForm({
-    userToken,
     user
 }: SendFormProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -52,6 +51,11 @@ export default function SendForm({
     const onSubmit = async (values: z.infer<typeof Schema>) => {
         setIsLoading(true);
         try {
+            if (!images.length) {
+                toast.error("Du må laste opp kvitteringer.");
+                return;
+            }
+
             const data = new FormData();
             data.append("name", values.name);
             data.append("email", values.email);
@@ -219,7 +223,7 @@ export default function SendForm({
                                             )}
                                             >
                                             {field.value ? (
-                                                format(field.value, "PPP")
+                                                format(field.value, "PPP", { locale: nb })
                                             ) : (
                                                 <span>Velg en dato</span>
                                             )}
@@ -265,10 +269,14 @@ export default function SendForm({
                             )}
                         /> 
 
-                        <FileUpload
-                            userToken={userToken}
-                            setImgs={setImages}
-                        /> 
+                        <div className="space-y-2">
+                            <Label>
+                                Last opp kvitteringer <span className="text-red-500">*</span>
+                            </Label>
+                            <FileUpload
+                                setImgs={setImages}
+                            /> 
+                        </div>
 
                         {images.length > 0 && (
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

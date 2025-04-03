@@ -4,29 +4,31 @@ import { cn } from "@/lib/utils";
 import { Loader2, Upload } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { toast } from "sonner";
+import { uploadImage } from "../actions/file-upload";
 
 
 interface FileUploadProps {
-    userToken: string;
-    setImgs: Dispatch<SetStateAction<string[]>>;
+  setImgs: Dispatch<SetStateAction<string[]>>;
 };
 
-const FileUpload = ({ userToken, setImgs }: FileUploadProps)=> {
+const FileUpload = ({ setImgs }: FileUploadProps)=> {
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    const uploadFileToLepton = async (file: File) => {
-      const headers = new Headers();
-      headers.append("x-csrf-token", userToken);
-
+    const uploadFileToAzure = async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await fetch("https://api.tihlde.org/upload/", {
-        method: "POST",
-        body: formData,
-        headers
-      });
-      const data = await response.json();
-      return data;
+
+      if (file.size > 4 * 1024 * 1024) { // 4 MB
+        throw new Error("Filen er større enn 4 MB som er maksgrensen.");
+      }
+
+      const { error, url } = await uploadImage(formData);
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      return url;
     };
 
     const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,16 +37,19 @@ const FileUpload = ({ userToken, setImgs }: FileUploadProps)=> {
           setIsLoading(true)
 
           try {
-            const data = await uploadFileToLepton(file);
+            const url = await uploadFileToAzure(file);
     
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            setImgs((prev) => [...prev, data.url]);
+            setImgs((prev) => [...prev, url]);
             toast.success("Filen ble opplastet");
           } catch (e) {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            toast.error(e.detail || "Det oppstod en feil");
+            if (e instanceof Error) {
+              toast.error(e.message)
+            } else {
+              console.error("Error uploading file: ", e);
+              toast.error("Det oppstod en feil");
+            }
           }
           setIsLoading(false);
         }

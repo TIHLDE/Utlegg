@@ -7,10 +7,17 @@ import { v4 as uuidv4 } from "uuid";
 import { resend } from "@/lib/resend";
 import path from "path";
 import fs from 'fs/promises';
+import { getCurrentSession } from "@/lib/auth/auth";
 
 
 export async function POST(req: Request) {
     try {
+        const token = await getCurrentSession();
+
+        if (!token) {
+            return new Response(null, { status: 401 });
+        }
+
         const formData = await req.formData();
     
         const name = formData.get("name") as string;
@@ -47,25 +54,31 @@ export async function POST(req: Request) {
 
         const file = await fs.readFile(fullPath);
 
-        const { error } = await resend.emails.send({
-            from: "TIHLDE Utlegg <updates@quicksend.tihlde.org>",
-            to: "finansminister@tihlde.org",
-            subject: "Utlegg fra TIHLDE",
-            text: `Hei Finansminister!,\n\n${name} har sendt inn en kvitteringen for et utlegg.\n\n Epost: ${email}\n\nMvh\nTIHLDE Quicksend`,
-            attachments: [
-                {
-                    content: file.toString("base64"),
-                    filename: "utlegg.pdf",
-                }
-            ]
-        });
+        if (process.env.NODE_ENV === "production") {
+            const { error } = await resend.emails.send({
+                from: "TIHLDE Utlegg <updates@quicksend.tihlde.org>",
+                to: "finansminister@tihlde.org",
+                subject: "Utlegg fra TIHLDE",
+                text: `Hei Finansminister!,\n\n${name} har sendt inn en kvitteringen for et utlegg.\n\n Epost: ${email}\n\nMvh\nTIHLDE Utlegg`,
+                attachments: [
+                    {
+                        content: file.toString("base64"),
+                        filename: "utlegg.pdf",
+                    }
+                ]
+            });
+    
+            if (error) {
+                return new Response(null, { status: 500 });
+            }
+        } 
 
         // Send copy to user
         const { error: userError } = await resend.emails.send({
             from: "TIHLDE Utlegg <updates@quicksend.tihlde.org>",
             to: email,
             subject: "Kvittering for utlegg",
-            text: `Hei ${name},\n\nHer er kvitteringen for utlegget ditt.\n\nMvh\nTIHLDE Quicksend`,
+            text: `Hei ${name},\n\nHer er kvitteringen for utlegget ditt.\n\nMvh\nTIHLDE Utlegg`,
             attachments: [
                 {
                     content: file.toString("base64"),
@@ -74,7 +87,7 @@ export async function POST(req: Request) {
             ]
         });
 
-        if (error || userError) {
+        if (userError) {
             return new Response(null, { status: 500 });
         }
 

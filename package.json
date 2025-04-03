@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.27.0",
     "@hookform/error-message": "^2.0.1",
     "@hookform/resolvers": "^3.10.0",
     "@oslojs/crypto": "^1.0.1",

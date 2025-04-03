@@ -11,8 +11,7 @@ export default async function SendPage() {
   
   return (
     <div className="flex items-center justify-center mt-12 md:mt-20 pb-12">
-      <SendForm userToken={token!} user={user} />
-
+      <SendForm user={user} />
     </div>
   );
 };
