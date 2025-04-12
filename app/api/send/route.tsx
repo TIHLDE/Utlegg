@@ -3,10 +3,9 @@
 import ReactPDF from "@react-pdf/renderer";
 
 import Pdf from "../../template/pdf";
-import { v4 as uuidv4 } from "uuid";
-import { resend } from "@/lib/resend";
 import path from "path";
 import fs from 'fs/promises';
+import { sendEmail, uploadFile } from "./util";
 
 
 export async function POST(req: Request) {
@@ -26,9 +25,8 @@ export async function POST(req: Request) {
 
         const urlsArray = JSON.parse(urls) as string[];    
 
-        const uuid = uuidv4();
         const storePath = path.join(process.cwd(), "public");
-        const fileName = `${email}_${uuid}.pdf`;
+        const fileName = `-${username}.pdf`;
         const fullPath = path.join(storePath, fileName);
     
         await ReactPDF.render(
@@ -45,41 +43,45 @@ export async function POST(req: Request) {
             fullPath
         );
 
-        const file = await fs.readFile(fullPath);
+        const fileBuffer = await fs.readFile(fullPath);
+        const file = new File([fileBuffer], fileName, { type: "application/pdf" });
 
-        const { error } = await resend.emails.send({
-            from: "TIHLDE Utlegg <updates@quicksend.tihlde.org>",
-            to: "finansminister@tihlde.org",
-            subject: "Utlegg fra TIHLDE",
-            text: `Hei Finansminister!,\n\n${name} har sendt inn en kvitteringen for et utlegg.\n\n Epost: ${email}\n\nMvh\nTIHLDE Quicksend`,
-            attachments: [
-                {
-                    content: file.toString("base64"),
-                    filename: "utlegg.pdf",
-                }
-            ]
-        });
+        const { error: uploadError, data } = await uploadFile(file);
 
-        // Send copy to user
-        const { error: userError } = await resend.emails.send({
-            from: "TIHLDE Utlegg <updates@quicksend.tihlde.org>",
-            to: email,
-            subject: "Kvittering for utlegg",
-            text: `Hei ${name},\n\nHer er kvitteringen for utlegget ditt.\n\nMvh\nTIHLDE Quicksend`,
-            attachments: [
-                {
-                    content: file.toString("base64"),
-                    filename: "utlegg.pdf",
-                }
-            ]
-        });
+        if (uploadError || !data) {
+            return new Response(null, { status: 500 });
+        }
 
-        if (error || userError) {
+        const fileUrl = data;
+
+        const { error: recieverError } = await sendEmail(
+            ["finansminister@tihlde.org"],
+            "Utlegg til godkjenning",
+            [
+                "Hei Finansminister!",
+                `${name} har sendt inn et utlegg. Alle detaljer er i vedlegget.`
+            ],
+            [fileUrl]
+        );
+
+        const { error: userError } = await sendEmail(
+            [email],
+            "Kvittering for utlegg",
+            [
+                `Hei ${name},`,
+                "Her er kvitteringen for utlegget ditt. Utlegget er sendt til finansministeren. Du vil få returnert pengene dine så snart som mulig.",
+                "Hvis det er noen problemer med utlegget, vil du bli kontaktet av finansministeren.",
+            ],
+            [fileUrl]
+        );
+
+        if (recieverError || userError) {
             return new Response(null, { status: 500 });
         }
 
         await fs.unlink(fullPath);
-    } catch {
+    } catch (error) {
+        console.error("Error in SEND request: ", error);
         return new Response(null, { status: 500 });
     };
 

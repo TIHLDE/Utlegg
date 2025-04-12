@@ -15,10 +15,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { nb } from "date-fns/locale";
 import { toast } from "sonner";
-import FileUpload from "./file-upload";
 import { useState } from "react";
 import Image from "next/image";
 import type { User } from "@/types";
+import FileUpload from "./upload";
 
 const Schema = z.object({
     name: z.string().nonempty(),
@@ -52,6 +52,12 @@ export default function SendForm({
     const onSubmit = async (values: z.infer<typeof Schema>) => {
         setIsLoading(true);
         try {
+
+            if (images.length === 0) {
+                toast.error("Du må laste opp minst én kvittering.");
+                return;
+            }
+
             const data = new FormData();
             data.append("name", values.name);
             data.append("email", values.email);
@@ -76,8 +82,6 @@ export default function SendForm({
             toast.success("Utleggskjemaet ble sendt inn!");
             setImages([]);
             form.reset({
-                name: "",
-                email: "",
                 amount: "",
                 date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
                 description: "",
@@ -219,7 +223,7 @@ export default function SendForm({
                                             )}
                                             >
                                             {field.value ? (
-                                                format(field.value, "PPP")
+                                                format(field.value, "PPP", { locale: nb })
                                             ) : (
                                                 <span>Velg en dato</span>
                                             )}
@@ -267,8 +271,8 @@ export default function SendForm({
 
                         <FileUpload
                             userToken={userToken}
-                            setImgs={setImages}
-                        /> 
+                            setImages={setImages}
+                        />
 
                         {images.length > 0 && (
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

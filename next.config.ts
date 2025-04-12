@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       {
         hostname: "leptonstoragepro.blob.core.windows.net",
       },
+      {
+        hostname: "tihldestorage.blob.core.windows.net",
+      },
     ]
   },
   output: process.env.NODE_ENV === "development" ? undefined : "standalone",
