@@ -95,7 +95,7 @@ export default function FileUpload ({
                     ref={fileInputRef}
                     id="file-upload-handle"
                     type="file"
-                    accept="image/*"
+                    accept=".png,.jpg,.jpeg"
                     onChange={(e) =>
                         handleFileChange(Array.from(e.target.files || []))
                     }
