@@ -28,12 +28,18 @@ const secondaryVariant = {
 
 interface FileUploadProps {
     userToken: string;
-    setImages: Dispatch<SetStateAction<string[]>>; 
+    setFiles: Dispatch<SetStateAction<string[]>>;
+    title: string;
+    description: string; 
+    accept?: string;
 };
 
 export default function FileUpload ({
     userToken,
-    setImages,
+    setFiles,
+    title,
+    description,
+    accept
 }: FileUploadProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -58,14 +64,14 @@ export default function FileUpload ({
         setIsLoading(true);
 
         if (newFiles.length > 5) {
-            toast.error("Maks 5 bilder kan lastes opp samtidig");
+            toast.error("Maks 5 filer kan lastes opp samtidig");
             return;
         }
 
         const filePromises = newFiles.map((file) => uploadFileToLepton(file));
         const urls = await Promise.all(filePromises);
 
-        setImages((prev) => [...prev, ...urls]);
+        setFiles((prev) => [...prev, ...urls]);
         setIsLoading(false);
         toast.success(`Filen${newFiles.length > 1 ? "e" : ""} ble opplastet`);
     };
@@ -95,7 +101,7 @@ export default function FileUpload ({
                     ref={fileInputRef}
                     id="file-upload-handle"
                     type="file"
-                    accept=".png,.jpg,.jpeg"
+                    accept={accept}
                     onChange={(e) =>
                         handleFileChange(Array.from(e.target.files || []))
                     }
@@ -106,10 +112,10 @@ export default function FileUpload ({
                 </div>
                 <div className="flex flex-col items-center justify-center">
                     <p className="relative z-20 font-sans font-bold  text-neutral-300 text-base">
-                        Velg kvitteringer
+                        {title}
                     </p>
                     <p className="relative z-20 font-sans font-normal  text-neutral-400 text-base mt-2">
-                        Slipp et bilde eller klikk for å laste opp
+                        {description}
                     </p>
                     <div className="relative w-full mt-10 max-w-xl mx-auto">
                         {isLoading

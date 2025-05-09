@@ -16,3 +16,23 @@ export type User = {
         }
     }
 };
+
+export type Group = {
+    name: string;
+    slug: string;
+    image: string;
+};
+
+export type Membership = {
+    user: User;
+    membership_type: string;
+    group: Group;
+};
+
+
+export type MembershipResponse = {
+    count: number;
+    next: number | null;
+    previous: number | null;
+    results: Membership[];
+};

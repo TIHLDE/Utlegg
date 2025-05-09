@@ -4,7 +4,7 @@ import { z } from "zod";
 import { SigninInputSchema } from "./schema";
 import { deleteSessionTokenCookie, setSessionTokenCookie } from "./auth";
 import { redirect } from "next/navigation";
-import type { User } from "@/types";
+import type { MembershipResponse, User } from "@/types";
 
 
 export interface ActionResponse<T> {
@@ -66,7 +66,7 @@ export async function login(
 export async function logout() {  
     await deleteSessionTokenCookie();
     return redirect("/login");
-}
+};
 
 export async function getMyUserInfo(token: string): Promise<User | null> {
     if (!token) {
@@ -84,4 +84,22 @@ export async function getMyUserInfo(token: string): Promise<User | null> {
     }
 
     return await response.json();
-}
+};
+
+export async function getUserMemberships(token: string): Promise<MembershipResponse | null> {
+    if (!token) {
+        return null;
+    }
+
+    const response = await fetch("https://api.tihlde.org/users/me/memberships/", {
+        headers: {
+            "x-csrf-token": token,
+        },
+    });
+
+    if (!response.ok) {
+        return null;
+    }
+
+    return await response.json();
+}; 

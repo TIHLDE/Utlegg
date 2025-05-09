@@ -18,15 +18,16 @@ import { toast } from "sonner";
 import { useState } from "react";
 import Image from "next/image";
 import type { User } from "@/types";
-import FileUpload from "./upload";
+import FileUpload from "@/app/_components/upload";
 
 const Schema = z.object({
-    name: z.string().nonempty(),
-    email: z.string().email(),
-    amount: z.string(),
-    date: z.date(),
-    description: z.string().nonempty(),
-    accountNumber: z.string().length(11),
+    name: z.string({ required_error: "Du må fylle inn navnet ditt" }).nonempty(),
+    email: z.string({ required_error: "Du må fylle inn e-posten din" }).email(),
+    amount: z.number({ required_error: "Du må fylle inn beløp" }).positive(),
+    date: z.date({ required_error: "Du må fylle inn dato" }),
+    description: z.string({ required_error: "Du må fylle inn beskrivelse" }).nonempty(),
+    accountNumber: z.number({ required_error: "Du må fylle inn kontonummer" })
+        .min(1000000000, { message: "Kontonummeret må være 11 siffer" })
 });
 
 interface SendFormProps {
@@ -61,10 +62,10 @@ export default function SendForm({
             const data = new FormData();
             data.append("name", values.name);
             data.append("email", values.email);
-            data.append("amount", values.amount);
+            data.append("amount", values.amount.toString());
             data.append("date", values.date.toISOString());
             data.append("description", values.description);
-            data.append("accountNumber", values.accountNumber);
+            data.append("accountNumber", values.accountNumber.toString());
             data.append("receipts", JSON.stringify(images));
             data.append("username", user?.user_id || "");
             data.append("study", user?.study.group.name || "");
@@ -82,10 +83,10 @@ export default function SendForm({
             toast.success("Utleggskjemaet ble sendt inn!");
             setImages([]);
             form.reset({
-                amount: "",
+                amount: 0,
                 date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
                 description: "",
-                accountNumber: "",
+                accountNumber: undefined,
             });
         } catch (error) {
             if (error instanceof Error) {
@@ -175,6 +176,11 @@ export default function SendForm({
                                                 className="bg-background"
                                                 {...field}
                                                 required
+                                                type="number"
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    field.onChange(isNaN(value) ? 0 : value);
+                                                }}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -196,6 +202,11 @@ export default function SendForm({
                                                 {...field}
                                                 required
                                                 type="number"
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    field.onChange(isNaN(value) ? 0 : value);
+                                                }}
+                                                placeholder="11 siffer"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -271,7 +282,10 @@ export default function SendForm({
 
                         <FileUpload
                             userToken={userToken}
-                            setImages={setImages}
+                            setFiles={setImages}
+                            title="Velg kvitteringer"
+                            description="Slipp et bilde eller klikk for å laste opp"
+                            accept=".png,.jpg,.jpeg"
                         />
 
                         {images.length > 0 && (
@@ -296,7 +310,7 @@ export default function SendForm({
                             </div>
                         )}
 
-                        <div className="pt-4 md:pt-6">
+                        <div className="pt-4 md:pt-6 flex justify-end">
                             <Button
                                 className="w-full md:w-auto"
                                 type="submit"
