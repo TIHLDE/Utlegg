@@ -44,7 +44,8 @@ export async function POST(req: Request) {
         );
 
         const fileBuffer = await fs.readFile(fullPath);
-        const file = new File([fileBuffer], fileName, { type: "application/pdf" });
+
+        const file = new File([new Uint8Array(fileBuffer)], fileName, { type: "application/pdf" });
 
         const { error: uploadError, data } = await uploadFile(file);
 
