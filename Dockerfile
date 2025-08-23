@@ -8,7 +8,7 @@ WORKDIR /build
 
 COPY . .
 
-RUN pnpm i --no-frozen-lockfile --force
+RUN pnpm i --frozen-lockfile
 
 ARG SKIP_ENV_VALIDATION=1
 
