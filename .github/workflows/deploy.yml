@@ -21,13 +21,13 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key
           chmod 600 ~/.ssh/key
-          ssh-keyscan ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.PROXY_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy to OpenStack server
         run: |
           eval $(ssh-agent -s)
           ssh-add ~/.ssh/key
-          ssh -v -A ${{ secrets.USER }}@${{ secrets.HOST }} << ENDSSH
+          ssh -v -o StrictHostKeyChecking=no -J ${{ secrets.USER }}@${{ secrets.PROXY_HOST }} ${{ secrets.USER }}@${{ secrets.HOST }} << ENDSSH
           sudo -i
           cd ${{ secrets.WORKING_DIR }}
           chmod 0600 .env
@@ -36,4 +36,3 @@ jobs:
           echo "${{ secrets.ENV }}" > .env
           make prod
           ENDSSH
-
