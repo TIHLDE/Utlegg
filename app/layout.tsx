@@ -30,7 +30,7 @@ export default async function RootLayout({
   const token = await getCurrentSession();
 
   return (
-    <html lang="en">
+    <html lang="no">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased max-w-8xl mx-auto px-2 md:px-4 lg:px-8 bg-background`}
       >
