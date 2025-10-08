@@ -4,87 +4,156 @@ import ReactPDF from "@react-pdf/renderer";
 
 import Pdf from "../../template/pdf";
 import path from "path";
-import fs from 'fs/promises';
+import fs from "fs/promises";
 import { sendEmail, uploadFile } from "./util";
 
-
 export async function POST(req: Request) {
-    try {
-        const formData = await req.formData();
-    
-        const name = formData.get("name") as string;
-        const email = formData.get("email") as string;
-        const amount = formData.get("amount") as string;
-        const date = formData.get("date") as string;
-        const description = formData.get("description") as string;
-        const accountNumber = formData.get("accountNumber") as string;
-        const urls = formData.get("receipts") as string;
-        const username = formData.get("username") as string;
-        const study = formData.get("study") as string;
-        const year = formData.get("year") as string;
+  try {
+    const formData = await req.formData();
 
-        const urlsArray = JSON.parse(urls) as string[];    
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const amount = formData.get("amount") as string;
+    const date = formData.get("date") as string;
+    const description = formData.get("description") as string;
+    const accountNumber = formData.get("accountNumber") as string;
+    const urls = formData.get("receipts") as string;
+    const username = formData.get("username") as string;
+    const study = formData.get("study") as string;
+    const year = formData.get("year") as string;
 
-        const storePath = path.join(process.cwd(), "public");
-        const fileName = `-${username}.pdf`;
-        const fullPath = path.join(storePath, fileName);
-    
-        await ReactPDF.render(
-            <Pdf
-                name={name}
-                email={email}
-                amount={amount}
-                date={date}
-                description={description}
-                accountNumber={accountNumber}
-                urls={urlsArray}
-                signature={`${username}: ${study} - ${year}`}
-            />,
-            fullPath
-        );
+    const urlsArray = JSON.parse(urls) as string[];
+    console.log(
+      "📸 Kvitteringsbilder (sendes som separate vedlegg):",
+      urlsArray
+    );
 
-        const fileBuffer = await fs.readFile(fullPath);
+    const storePath = path.join(process.cwd(), "public");
+    const fileName = `-${username}.pdf`;
+    const fullPath = path.join(storePath, fileName);
 
-        const file = new File([new Uint8Array(fileBuffer)], fileName, { type: "application/pdf" });
+    console.log("📄 Genererer PDF (kun skjemadata, bilder sendes separat)...");
+    await ReactPDF.render(
+      <Pdf
+        name={name}
+        email={email}
+        amount={amount}
+        date={date}
+        description={description}
+        accountNumber={accountNumber}
+        signature={`${username}: ${study} - ${year}`}
+      />,
+      fullPath
+    );
+    console.log("✅ PDF generert vellykket");
 
-        const { error: uploadError, data } = await uploadFile(file);
+    console.log("📖 Leser PDF-fil...");
+    const fileBuffer = await fs.readFile(fullPath);
+    console.log("✅ PDF-fil lest, størrelse:", fileBuffer.length, "bytes");
 
-        if (uploadError || !data) {
-            return new Response(null, { status: 500 });
-        }
+    const file = new File([new Uint8Array(fileBuffer)], fileName, {
+      type: "application/pdf",
+    });
 
-        const fileUrl = data;
+    console.log("☁️ Laster opp PDF til server...");
+    const { error: uploadError, data } = await uploadFile(file);
 
-        const { error: recieverError } = await sendEmail(
-            ["mathias.strom03@gmail.com"],
-            "Utlegg til godkjenning",
-            [
-                "Hei Finansminister!",
-                `${name} har sendt inn et utlegg. Alle detaljer er i vedlegget.`
-            ],
-            [fileUrl]
-        );
+    if (uploadError || !data) {
+      console.error("❌ PDF-opplastning feilet:", uploadError);
+      return new Response(null, { status: 500 });
+    }
 
-        const { error: userError } = await sendEmail(
-            [email],
-            "Kvittering for utlegg",
-            [
-                `Hei ${name},`,
-                "Her er kvitteringen for utlegget ditt. Utlegget er sendt til finansministeren. Du vil få returnert pengene dine så snart som mulig.",
-                "Hvis det er noen problemer med utlegget, vil du bli kontaktet av finansministeren.",
-            ],
-            [fileUrl]
-        );
+    const fileUrl = data;
+    console.log("✅ PDF lastet opp, URL:", fileUrl);
 
-        if (recieverError || userError) {
-            return new Response(null, { status: 500 });
-        }
+    const formattedDate = new Date(date).toLocaleDateString("nb-NO", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
-        await fs.unlink(fullPath);
-    } catch (error) {
-        console.error("Error in SEND request: ", error);
-        return new Response(null, { status: 500 });
-    };
+    console.log(
+      "📧 Sender e-post til finansminister (med all info + vedlegg)..."
+    );
+    const { error: recieverError } = await sendEmail(
+      ["mathias.strom03@gmail.com"],
+      "Nytt utlegg til godkjenning",
+      [
+        "Hei Finansminister!",
+        `${name} har sendt inn et nytt utlegg. Se detaljer nedenfor:`,
+        "",
+        "--- UTLEGGSDETALJER ---",
+        `Navn: ${name}`,
+        `E-post: ${email}`,
+        `Beløp: ${amount} NOK`,
+        `Kontonummer: ${accountNumber}`,
+        `Dato: ${formattedDate}`,
+        `Studie: ${study}`,
+        `Årskull: ${year}`,
+        "",
+        "Årsak til utlegg:",
+        description,
+        "",
+        `Antall kvitteringer: ${urlsArray.length}`,
+        "",
+        "PDF-skjema og kvitteringsbilder er vedlagt som filer.",
+      ],
+      [fileUrl, ...urlsArray] // PDF first, then all receipt images
+    );
 
-    return new Response(null, { status: 200 });
-};
+    if (recieverError) {
+      console.error("❌ E-post til finansminister feilet:", recieverError);
+      return new Response(null, { status: 500 });
+    }
+    console.log("✅ E-post sendt til finansminister");
+
+    console.log("📧 Sender e-post til bruker (med all info + vedlegg)...");
+    const { error: userError } = await sendEmail(
+      [email],
+      "Kvittering for utlegg",
+      [
+        `Hei ${name},`,
+        "",
+        "Takk for at du sendte inn utlegget ditt. Her er en oppsummering:",
+        "",
+        "--- DITT UTLEGG ---",
+        `Beløp: ${amount} NOK`,
+        `Kontonummer: ${accountNumber}`,
+        `Dato: ${formattedDate}`,
+        "",
+        "Årsak:",
+        description,
+        "",
+        `Kvitteringer: ${urlsArray.length} stk`,
+        "",
+        "Utlegget er sendt til finansministeren. Du vil få returnert pengene dine så snart som mulig.",
+        "Hvis det er noen problemer med utlegget, vil du bli kontaktet av finansministeren.",
+        "",
+        "PDF-skjema og kvitteringsbilder er vedlagt som filer til denne e-posten.",
+      ],
+      [fileUrl, ...urlsArray] // PDF first, then all receipt images
+    );
+
+    if (userError) {
+      console.error("❌ E-post til bruker feilet:", userError);
+      return new Response(null, { status: 500 });
+    }
+    console.log("✅ E-post sendt til bruker");
+
+    console.log("🗑️ Sletter midlertidig PDF-fil...");
+    await fs.unlink(fullPath);
+    console.log("✅ Midlertidig fil slettet");
+  } catch (error) {
+    console.error("❌ Error in SEND request: ", error);
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    return new Response(JSON.stringify({ error: String(error) }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(null, { status: 200 });
+}
