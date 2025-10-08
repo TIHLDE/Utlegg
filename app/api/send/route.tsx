@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     // Send both emails in parallel for better performance
     const [{ error: recieverError }, { error: userError }] = await Promise.all([
       sendEmail(
-        ["mathias.strom03@gmail.com"],
+        ["finansminister@tihlde.org"],
         "Nytt utlegg til godkjenning",
         [
           "Hei Finansminister!",
