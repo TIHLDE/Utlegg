@@ -47,40 +47,56 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
     }
 
     try {
-      console.log("Konverterer HEIC-fil:", file.name);
+      console.log("Konverterer HEIC/HEIF-fil:", file.name);
 
       // Dynamically import heic2any only when needed (client-side only)
       const heic2any = (await import("heic2any")).default;
 
-      // For HEIC files with empty MIME type, create a proper blob
-      let blobToConvert = file;
-      if (
-        !file.type ||
-        file.type === "" ||
-        file.type === "application/octet-stream"
-      ) {
-        blobToConvert = new File([file], file.name, { type: "image/heic" });
+      // Determine correct MIME type based on file extension
+      const isHeif = fileName.endsWith(".heif");
+      const detectedMimeType = isHeif ? "image/heif" : "image/heic";
+
+      // Use the file's existing type if it's already correct, otherwise use detected type
+      const isValidHeicType =
+        file.type === "image/heic" || file.type === "image/heif";
+      const mimeType = isValidHeicType ? file.type : detectedMimeType;
+
+      // If file already has correct type, use it directly as a blob; otherwise create a new Blob
+      let blob;
+      if (isValidHeicType) {
+        // File already has correct MIME type, use it directly (File extends Blob)
+        blob = file;
+      } else {
+        // Create a Blob with correct MIME type
+        blob = new Blob([file], { type: mimeType });
       }
 
-      // Try multiple quality settings if the first one fails
+      // Try conversion with quality 1 first (like the working example)
       let convertedBlob;
       try {
         convertedBlob = await heic2any({
-          blob: blobToConvert,
+          blob: blob,
           toType: "image/jpeg",
-          quality: 0.8,
+          quality: 1,
         });
       } catch {
-        console.log("Prøver med lavere kvalitet...");
-        convertedBlob = await heic2any({
-          blob: blobToConvert,
-          toType: "image/jpeg",
-          quality: 0.5,
-        });
+        try {
+          convertedBlob = await heic2any({
+            blob: blob,
+            toType: "image/jpeg",
+            quality: 0.8,
+          });
+        } catch {
+          convertedBlob = await heic2any({
+            blob: blob,
+            toType: "image/jpeg",
+            quality: 0.5,
+          });
+        }
       }
 
       // heic2any can return an array or a single blob
-      const blob = Array.isArray(convertedBlob)
+      const resultBlob = Array.isArray(convertedBlob)
         ? convertedBlob[0]
         : convertedBlob;
 
@@ -89,17 +105,17 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
         .replace(/\.heic$/i, ".jpg")
         .replace(/\.heif$/i, ".jpg");
 
-      const convertedFile = new File([blob], newFileName, {
+      const convertedFile = new File([resultBlob], newFileName, {
         type: "image/jpeg",
         lastModified: file.lastModified || Date.now(),
       });
 
-      console.log("✓ HEIC konvertert til JPEG");
-      toast.success("HEIC-bilde konvertert til JPEG");
+      console.log("✓ HEIC/HEIF konvertert til JPEG");
+      toast.success("HEIC/HEIF-bilde konvertert til JPEG");
 
       return convertedFile;
     } catch (error) {
-      console.error("HEIC-konverteringsfeil:", error);
+      console.error("HEIC/HEIF-konverteringsfeil:", error);
 
       // Check for specific error codes (heic2any returns objects with code/message)
       const heicError = error as { code?: number; message?: string };
@@ -108,18 +124,18 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
         heicError?.message?.includes("format not supported")
       ) {
         toast.error(
-          "Dette HEIC-formatet støttes ikke. Vennligst konverter bildet til JPEG på enheten din først.",
+          "Dette HEIC/HEIF-formatet støttes ikke. Vennligst konverter bildet til JPEG på enheten din først.",
           { duration: 6000 }
         );
         throw new Error(
-          "HEIC-formatet støttes ikke. Konverter bildet til JPEG og prøv igjen."
+          "HEIC/HEIF-formatet støttes ikke. Konverter bildet til JPEG og prøv igjen."
         );
       }
 
       // Generic error - try uploading original
-      console.warn("Prøver å laste opp original HEIC-fil");
+      console.warn("Prøver å laste opp original HEIC/HEIF-fil");
       toast.warning(
-        "Kunne ikke konvertere HEIC. Bildet vises kanskje ikke i e-posten.",
+        "Kunne ikke konvertere HEIC/HEIF. Bildet vises kanskje ikke i e-posten.",
         { duration: 5000 }
       );
       return file;
@@ -224,7 +240,7 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
           ref={fileInputRef}
           id="file-upload-handle"
           type="file"
-          accept=".png,.jpg,.jpeg,.heic,.heif"
+          accept="image/jpeg,image/png"
           onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
           className="hidden"
         />
