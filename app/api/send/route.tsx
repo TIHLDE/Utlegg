@@ -73,72 +73,74 @@ export async function POST(req: Request) {
     });
 
     console.log(
-      "📧 Sender e-post til finansminister (med all info + vedlegg)..."
+      "📧 Sender e-poster parallelt (til finansminister og bruker)..."
     );
-    const { error: recieverError } = await sendEmail(
-      ["mathias.strom03@gmail.com"],
-      "Nytt utlegg til godkjenning",
-      [
-        "Hei Finansminister!",
-        `${name} har sendt inn et nytt utlegg. Se detaljer nedenfor:`,
-        "",
-        "--- UTLEGGSDETALJER ---",
-        `Navn: ${name}`,
-        `E-post: ${email}`,
-        `Beløp: ${amount} NOK`,
-        `Kontonummer: ${accountNumber}`,
-        `Dato: ${formattedDate}`,
-        `Studie: ${study}`,
-        `Årskull: ${year}`,
-        "",
-        "Årsak til utlegg:",
-        description,
-        "",
-        `Antall kvitteringer: ${urlsArray.length}`,
-        "",
-        "PDF-skjema og kvitteringsbilder er vedlagt som filer.",
-      ],
-      [fileUrl, ...urlsArray] // PDF first, then all receipt images
-    );
+
+    // Send both emails in parallel for better performance
+    const [{ error: recieverError }, { error: userError }] = await Promise.all([
+      sendEmail(
+        ["mathias.strom03@gmail.com"],
+        "Nytt utlegg til godkjenning",
+        [
+          "Hei Finansminister!",
+          `${name} har sendt inn et nytt utlegg. Se detaljer nedenfor:`,
+          " ",
+          "--- UTLEGGSDETALJER ---",
+          `Navn: ${name}`,
+          `E-post: ${email}`,
+          `Beløp: ${amount} NOK`,
+          `Kontonummer: ${accountNumber}`,
+          `Dato: ${formattedDate}`,
+          `Studie: ${study}`,
+          `Årskull: ${year}`,
+          " ",
+          "Årsak til utlegg:",
+          description,
+          " ",
+          `Antall kvitteringer: ${urlsArray.length}`,
+          " ",
+          "PDF-skjema og kvitteringsbilder er vedlagt som filer.",
+        ],
+        [...urlsArray, fileUrl] // Images first, then PDF
+      ),
+      sendEmail(
+        [email],
+        "Kvittering for utlegg",
+        [
+          `Hei ${name},`,
+          " ",
+          "Takk for at du sendte inn utlegget ditt. Her er en oppsummering:",
+          " ",
+          "--- DITT UTLEGG ---",
+          `Beløp: ${amount} NOK`,
+          `Kontonummer: ${accountNumber}`,
+          `Dato: ${formattedDate}`,
+          " ",
+          "Årsak:",
+          description,
+          " ",
+          `Kvitteringer: ${urlsArray.length} stk`,
+          " ",
+          "Utlegget er sendt til finansministeren. Du vil få returnert pengene dine så snart som mulig.",
+          "Hvis det er noen problemer med utlegget, vil du bli kontaktet av finansministeren.",
+          " ",
+          "PDF-skjema og kvitteringsbilder er vedlagt som filer til denne e-posten.",
+        ],
+        [...urlsArray, fileUrl] // Images first, then PDF
+      ),
+    ]);
 
     if (recieverError) {
       console.error("❌ E-post til finansminister feilet:", recieverError);
       return new Response(null, { status: 500 });
     }
-    console.log("✅ E-post sendt til finansminister");
-
-    console.log("📧 Sender e-post til bruker (med all info + vedlegg)...");
-    const { error: userError } = await sendEmail(
-      [email],
-      "Kvittering for utlegg",
-      [
-        `Hei ${name},`,
-        "",
-        "Takk for at du sendte inn utlegget ditt. Her er en oppsummering:",
-        "",
-        "--- DITT UTLEGG ---",
-        `Beløp: ${amount} NOK`,
-        `Kontonummer: ${accountNumber}`,
-        `Dato: ${formattedDate}`,
-        "",
-        "Årsak:",
-        description,
-        "",
-        `Kvitteringer: ${urlsArray.length} stk`,
-        "",
-        "Utlegget er sendt til finansministeren. Du vil få returnert pengene dine så snart som mulig.",
-        "Hvis det er noen problemer med utlegget, vil du bli kontaktet av finansministeren.",
-        "",
-        "PDF-skjema og kvitteringsbilder er vedlagt som filer til denne e-posten.",
-      ],
-      [fileUrl, ...urlsArray] // PDF first, then all receipt images
-    );
 
     if (userError) {
       console.error("❌ E-post til bruker feilet:", userError);
       return new Response(null, { status: 500 });
     }
-    console.log("✅ E-post sendt til bruker");
+
+    console.log("✅ Begge e-poster sendt vellykket");
 
     console.log("🗑️ Sletter midlertidig PDF-fil...");
     await fs.unlink(fullPath);
