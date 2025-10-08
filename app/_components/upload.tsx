@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { CloudUpload, Loader2 } from "lucide-react";
@@ -35,6 +37,95 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const convertHeicToJpeg = async (file: File): Promise<File> => {
+    // Check if the file is a HEIC file by extension (MIME type is often empty for HEIC)
+    const fileName = file.name.toLowerCase();
+    const isHeic = fileName.endsWith(".heic") || fileName.endsWith(".heif");
+
+    if (!isHeic) {
+      return file;
+    }
+
+    try {
+      console.log("Konverterer HEIC-fil:", file.name);
+
+      // Dynamically import heic2any only when needed (client-side only)
+      const heic2any = (await import("heic2any")).default;
+
+      // For HEIC files with empty MIME type, create a proper blob
+      let blobToConvert = file;
+      if (
+        !file.type ||
+        file.type === "" ||
+        file.type === "application/octet-stream"
+      ) {
+        blobToConvert = new File([file], file.name, { type: "image/heic" });
+      }
+
+      // Try multiple quality settings if the first one fails
+      let convertedBlob;
+      try {
+        convertedBlob = await heic2any({
+          blob: blobToConvert,
+          toType: "image/jpeg",
+          quality: 0.8,
+        });
+      } catch {
+        console.log("Prøver med lavere kvalitet...");
+        convertedBlob = await heic2any({
+          blob: blobToConvert,
+          toType: "image/jpeg",
+          quality: 0.5,
+        });
+      }
+
+      // heic2any can return an array or a single blob
+      const blob = Array.isArray(convertedBlob)
+        ? convertedBlob[0]
+        : convertedBlob;
+
+      // Create a new file with the converted blob
+      const newFileName = file.name
+        .replace(/\.heic$/i, ".jpg")
+        .replace(/\.heif$/i, ".jpg");
+
+      const convertedFile = new File([blob], newFileName, {
+        type: "image/jpeg",
+        lastModified: file.lastModified || Date.now(),
+      });
+
+      console.log("✓ HEIC konvertert til JPEG");
+      toast.success("HEIC-bilde konvertert til JPEG");
+
+      return convertedFile;
+    } catch (error) {
+      console.error("HEIC-konverteringsfeil:", error);
+
+      // Check for specific error codes (heic2any returns objects with code/message)
+      const heicError = error as { code?: number; message?: string };
+      if (
+        heicError?.code === 2 ||
+        heicError?.message?.includes("format not supported")
+      ) {
+        toast.error(
+          "Dette HEIC-formatet støttes ikke. Vennligst konverter bildet til JPEG på enheten din først.",
+          { duration: 6000 }
+        );
+        throw new Error(
+          "HEIC-formatet støttes ikke. Konverter bildet til JPEG og prøv igjen."
+        );
+      }
+
+      // Generic error - try uploading original
+      console.warn("Prøver å laste opp original HEIC-fil");
+      toast.warning(
+        "Kunne ikke konvertere HEIC. Bildet vises kanskje ikke i e-posten.",
+        { duration: 5000 }
+      );
+      return file;
+    }
+  };
+
   const uploadFileToLepton = async (file: File): Promise<string> => {
     const headers = new Headers();
     headers.append("x-csrf-token", userToken);
@@ -56,15 +147,56 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
 
     if (newFiles.length > 5) {
       toast.error("Maks 5 bilder kan lastes opp samtidig");
+      setIsLoading(false);
       return;
     }
 
-    const filePromises = newFiles.map((file) => uploadFileToLepton(file));
-    const urls = await Promise.all(filePromises);
+    try {
+      // Convert HEIC files to JPEG if necessary
+      const convertedFilesPromises = newFiles.map((file) =>
+        convertHeicToJpeg(file).catch((error) => {
+          // If conversion fails with unsupported format, skip this file
+          console.error(`Hoppet over ${file.name}:`, error.message);
+          return null;
+        })
+      );
+      const convertedFilesWithNulls = await Promise.all(convertedFilesPromises);
 
-    setImages((prev) => [...prev, ...urls]);
-    setIsLoading(false);
-    toast.success(`Filen${newFiles.length > 1 ? "e" : ""} ble opplastet`);
+      // Filter out failed conversions
+      const convertedFiles = convertedFilesWithNulls.filter(
+        (file): file is File => file !== null
+      );
+
+      if (convertedFiles.length === 0) {
+        toast.error("Ingen filer kunne lastes opp");
+        setIsLoading(false);
+        return;
+      }
+
+      // Upload the converted files
+      const filePromises = convertedFiles.map((file) =>
+        uploadFileToLepton(file)
+      );
+      const urls = await Promise.all(filePromises);
+
+      setImages((prev) => [...prev, ...urls]);
+
+      if (convertedFiles.length < newFiles.length) {
+        toast.warning(
+          `${convertedFiles.length} av ${newFiles.length} filer ble lastet opp`
+        );
+      } else {
+        toast.success(`Filen${newFiles.length > 1 ? "e" : ""} ble opplastet`);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Kunne ikke laste opp filen");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleClick = () => {
@@ -79,10 +211,6 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
     onDropRejected: () => {
       toast.error("Kunne ikke laste opp filen");
     },
-    accept: {
-      "image/png": [".png"],
-      "image/jpeg": [".jpg", ".jpeg"],
-    },
   });
 
   return (
@@ -96,7 +224,7 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
           ref={fileInputRef}
           id="file-upload-handle"
           type="file"
-          accept=".png,.jpg,.jpeg"
+          accept=".png,.jpg,.jpeg,.heic,.heif"
           onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
           className="hidden"
         />
@@ -109,9 +237,6 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
           </p>
           <p className="relative z-20 font-sans font-normal  text-neutral-400 text-base mt-2">
             Slipp et bilde eller klikk for å laste opp
-          </p>
-          <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-1">
-            Kun PNG, JPG og JPEG er tillatt
           </p>
           <div className="relative w-full mt-10 max-w-xl mx-auto">
             {isLoading ? (

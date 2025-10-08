@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         const fileUrl = data;
 
         const { error: recieverError } = await sendEmail(
-            ["finansminister@tihlde.org"],
+            ["mathias.strom03@gmail.com"],
             "Utlegg til godkjenning",
             [
                 "Hei Finansminister!",
