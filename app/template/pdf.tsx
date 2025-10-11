@@ -104,7 +104,10 @@ export default function Pdf({
     },
   });
 
-  const formattedDate = new Date(date).toLocaleDateString("nb-NO");
+  // Parse date without timezone conversion to avoid day shift
+  const [year, month, day] = date.split("-").map(Number);
+  const dateObj = new Date(year, month - 1, day);
+  const formattedDate = dateObj.toLocaleDateString("nb-NO");
 
   return (
     <Document>

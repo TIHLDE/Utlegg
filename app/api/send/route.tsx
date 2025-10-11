@@ -21,18 +21,11 @@ export async function POST(req: Request) {
     const username = formData.get("username") as string;
     const study = formData.get("study") as string;
     const year = formData.get("year") as string;
-
     const urlsArray = JSON.parse(urls) as string[];
-    console.log(
-      "📸 Kvitteringsbilder (inkluderes i PDF og sendes som separate vedlegg):",
-      urlsArray
-    );
-
     const storePath = path.join(process.cwd(), "public");
     const fileName = `-${username}.pdf`;
     const fullPath = path.join(storePath, fileName);
 
-    console.log("📄 Genererer PDF med kvitteringsbilder...");
     await ReactPDF.render(
       <Pdf
         name={name}
@@ -46,41 +39,39 @@ export async function POST(req: Request) {
       />,
       fullPath
     );
-    console.log("✅ PDF generert vellykket med kvitteringsbilder");
+    console.log("PDF generert vellykket med kvitteringsbilder");
 
-    console.log("📖 Leser PDF-fil...");
+    console.log("Leser PDF-fil...");
     const fileBuffer = await fs.readFile(fullPath);
-    console.log("✅ PDF-fil lest, størrelse:", fileBuffer.length, "bytes");
+    console.log("PDF-fil lest, størrelse:", fileBuffer.length, "bytes");
 
     const file = new File([new Uint8Array(fileBuffer)], fileName, {
       type: "application/pdf",
     });
 
-    console.log("☁️ Laster opp PDF til server...");
+    console.log("Laster opp PDF til server...");
     const { error: uploadError, data } = await uploadFile(file);
 
     if (uploadError || !data) {
-      console.error("❌ PDF-opplastning feilet:", uploadError);
+      console.error("PDF-opplastning feilet:", uploadError);
       return new Response(null, { status: 500 });
     }
 
     const fileUrl = data;
-    console.log("✅ PDF lastet opp, URL:", fileUrl);
+    console.log("PDF lastet opp, URL:", fileUrl);
 
-    const formattedDate = new Date(date).toLocaleDateString("nb-NO", {
+    // Parse date without timezone conversion to avoid day shift
+    const [dateYear, dateMonth, dateDay] = date.split("-").map(Number);
+    const dateObj = new Date(dateYear, dateMonth - 1, dateDay);
+    const formattedDate = dateObj.toLocaleDateString("nb-NO", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
 
-    console.log(
-      "📧 Sender e-poster parallelt (til finansminister og bruker)..."
-    );
-
-    // Send both emails in parallel for better performance
     const [{ error: recieverError }, { error: userError }] = await Promise.all([
       sendEmail(
-        ["mathias.strom03@gmail.com"],
+        ["finansminister@tihlde.org"],
         "Nytt utlegg til godkjenning",
         [
           "Hei Finansminister!",
@@ -132,22 +123,22 @@ export async function POST(req: Request) {
     ]);
 
     if (recieverError) {
-      console.error("❌ E-post til finansminister feilet:", recieverError);
+      console.error("E-post til finansminister feilet:", recieverError);
       return new Response(null, { status: 500 });
     }
 
     if (userError) {
-      console.error("❌ E-post til bruker feilet:", userError);
+      console.error("E-post til bruker feilet:", userError);
       return new Response(null, { status: 500 });
     }
 
-    console.log("✅ Begge e-poster sendt vellykket");
+    console.log("Begge e-poster sendt vellykket");
 
-    console.log("🗑️ Sletter midlertidig PDF-fil...");
+    console.log("Sletter midlertidig PDF-fil...");
     await fs.unlink(fullPath);
-    console.log("✅ Midlertidig fil slettet");
+    console.log("Midlertidig fil slettet");
   } catch (error) {
-    console.error("❌ Error in SEND request: ", error);
+    console.error("Error in SEND request: ", error);
     if (error instanceof Error) {
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
