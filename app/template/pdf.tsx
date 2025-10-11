@@ -1,4 +1,11 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import {
+  Document,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+} from "@react-pdf/renderer";
 
 interface PdfProps {
   name: string;
@@ -8,6 +15,7 @@ interface PdfProps {
   description: string;
   accountNumber: string;
   signature: string;
+  receipts: string[];
 }
 
 export default function Pdf({
@@ -18,6 +26,7 @@ export default function Pdf({
   description,
   accountNumber,
   signature,
+  receipts,
 }: PdfProps) {
   const styles = StyleSheet.create({
     page: {
@@ -82,6 +91,17 @@ export default function Pdf({
       flexDirection: "column",
       alignItems: "flex-start",
     },
+    receiptImage: {
+      width: "100%",
+      maxHeight: 300,
+      objectFit: "contain",
+      marginVertical: 5,
+    },
+    receiptContainer: {
+      width: "100%",
+      padding: 10,
+      marginVertical: 5,
+    },
   });
 
   const formattedDate = new Date(date).toLocaleDateString("nb-NO");
@@ -117,9 +137,12 @@ export default function Pdf({
         </View>
         <View style={styles.column}>
           <Text style={styles.header}>Kvitteringer:</Text>
-          <Text style={styles.text}>
-            Kvitteringsbilder er vedlagt som separate filer i e-posten.
-          </Text>
+          {receipts.map((receipt, index) => (
+            <View key={index} style={styles.receiptContainer}>
+              <Text style={styles.text}>Kvittering {index + 1}:</Text>
+              <Image src={receipt} style={styles.receiptImage} />
+            </View>
+          ))}
         </View>
         <View style={styles.bottomLeftBox}>
           <Text>Signatur:</Text>
