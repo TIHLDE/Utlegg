@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
     const urlsArray = JSON.parse(urls) as string[];
     console.log(
-      "📸 Kvitteringsbilder (sendes som separate vedlegg):",
+      "📸 Kvitteringsbilder (inkluderes i PDF og sendes som separate vedlegg):",
       urlsArray
     );
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const fileName = `-${username}.pdf`;
     const fullPath = path.join(storePath, fileName);
 
-    console.log("📄 Genererer PDF (kun skjemadata, bilder sendes separat)...");
+    console.log("📄 Genererer PDF med kvitteringsbilder...");
     await ReactPDF.render(
       <Pdf
         name={name}
@@ -42,10 +42,11 @@ export async function POST(req: Request) {
         description={description}
         accountNumber={accountNumber}
         signature={`${username}: ${study} - ${year}`}
+        receipts={urlsArray}
       />,
       fullPath
     );
-    console.log("✅ PDF generert vellykket");
+    console.log("✅ PDF generert vellykket med kvitteringsbilder");
 
     console.log("📖 Leser PDF-fil...");
     const fileBuffer = await fs.readFile(fullPath);
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
     // Send both emails in parallel for better performance
     const [{ error: recieverError }, { error: userError }] = await Promise.all([
       sendEmail(
-        ["finansminister@tihlde.org"],
+        ["mathias.strom03@gmail.com"],
         "Nytt utlegg til godkjenning",
         [
           "Hei Finansminister!",
