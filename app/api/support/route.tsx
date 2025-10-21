@@ -156,7 +156,7 @@ export async function POST(req: Request) {
     const attachments = [...budgetImages, fileUrl];
     const [{ error: receiverError }, { error: userError }] = await Promise.all([
       sendEmail(
-        ["finansminister@tihlde.org"],
+        ["finansminister@tihlde.org", "hs@tihlde.org"],
         "Ny søknad om støtte",
         financeEmailContent,
         attachments
