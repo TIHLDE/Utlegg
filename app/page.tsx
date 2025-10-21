@@ -1,18 +1,32 @@
 "use server";
 
-import { getCurrentSession } from "@/lib/auth/auth";
-import SendForm from "./_components/form";
-import { getMyUserInfo } from "@/lib/auth/actions";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
-export default async function SendPage() {
-  const token = await getCurrentSession();
-  const user = await getMyUserInfo(token!);
-
-  
+export default async function HomePage() {
   return (
-    <div className="flex items-center justify-center mt-12 md:mt-20 pb-12">
-      <SendForm userToken={token!} user={user} />
-
+    <div className="flex flex-col items-center justify-center min-h-[60vh] mt-12 md:mt-20 pb-12">
+      <h1 className="text-2xl md:text-3xl font-bold mb-8 md:mb-12">Jeg vil</h1>
+      <div className="flex flex-col sm:flex-row gap-4 md:gap-6">
+        <Link href="/utlegg">
+          <Button
+            variant="action"
+            size="lg"
+            className="w-full sm:w-auto px-12 py-8 text-xl transition-opacity hover:opacity-80"
+          >
+            Sende inn utlegg
+          </Button>
+        </Link>
+        <Link href="/soknad-om-stotte">
+          <Button
+            variant="action"
+            size="lg"
+            className="w-full sm:w-auto px-12 py-8 text-xl transition-opacity hover:opacity-80"
+          >
+            Søke støtte fra HS
+          </Button>
+        </Link>
+      </div>
     </div>
   );
-};
+}

@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format, set } from "date-fns";
-import { CalendarIcon, Loader2, Trash } from "lucide-react";
+import { CalendarIcon, Loader2, Trash, Receipt } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { nb } from "date-fns/locale";
@@ -145,7 +145,8 @@ export default function SendForm({ userToken, user }: SendFormProps) {
 
   return (
     <Card className="w-full max-w-5xl">
-      <CardHeader>
+      <CardHeader className="relative">
+        <Receipt className="absolute top-6 right-6 w-8 h-8 text-muted-foreground opacity-50" />
         <CardTitle>Send utleggskjema til TIHLDE!</CardTitle>
         <CardDescription>
           Fyll ut skjemaet og last opp kvitteringer, for å få refundert pengene.
