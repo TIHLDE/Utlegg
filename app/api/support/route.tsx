@@ -1,6 +1,10 @@
 "use server";
 
-import { sendEmail } from "../send/util";
+import ReactPDF from "@react-pdf/renderer";
+import SupportPdf from "../../template/support-pdf";
+import path from "path";
+import fs from "fs/promises";
+import { sendEmail, uploadFile } from "../send/util";
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +25,48 @@ export async function POST(req: Request) {
     const year = formData.get("year") as string;
 
     const budgetImages = JSON.parse(budgetImagesStr) as string[];
+
+    // Generate PDF
+    const storePath = path.join(process.cwd(), "public");
+    const fileName = `-support-${username}.pdf`;
+    const fullPath = path.join(storePath, fileName);
+
+    await ReactPDF.render(
+      <SupportPdf
+        name={name}
+        email={email}
+        groupName={groupName}
+        purpose={purpose}
+        eventDescription={eventDescription}
+        justification={justification}
+        totalAmount={totalAmount}
+        budgetLink={budgetLink}
+        summary={summary}
+        signature={`${username}: ${study} - ${year}`}
+        budgetImages={budgetImages}
+      />,
+      fullPath
+    );
+    console.log("PDF generert vellykket med budsjettbilder");
+
+    console.log("Leser PDF-fil...");
+    const fileBuffer = await fs.readFile(fullPath);
+    console.log("PDF-fil lest, størrelse:", fileBuffer.length, "bytes");
+
+    const file = new File([new Uint8Array(fileBuffer)], fileName, {
+      type: "application/pdf",
+    });
+
+    console.log("Laster opp PDF til server...");
+    const { error: uploadError, data } = await uploadFile(file);
+
+    if (uploadError || !data) {
+      console.error("PDF-opplastning feilet:", uploadError);
+      return new Response(null, { status: 500 });
+    }
+
+    const fileUrl = data;
+    console.log("PDF lastet opp, URL:", fileUrl);
 
     // Build email content for the finance minister
     const financeEmailContent = [
@@ -60,8 +106,12 @@ export async function POST(req: Request) {
       financeEmailContent.push(" ", "OPPSUMMERING:", summary);
     }
 
+    financeEmailContent.push(" ", "PDF-skjema er vedlagt.");
+
     if (budgetImages.length > 0) {
-      financeEmailContent.push(" ", "Budsjettbilder er vedlagt som filer.");
+      financeEmailContent.push(
+        "Budsjettbilder er også vedlagt som separate filer."
+      );
     }
 
     // Build email content for the user
@@ -91,29 +141,31 @@ export async function POST(req: Request) {
     userEmailContent.push(
       " ",
       "Søknaden er sendt til finansministeren. Du vil få svar så snart som mulig.",
-      "Hvis det er noen spørsmål om søknaden, vil du bli kontaktet av finansministeren."
+      "Hvis det er noen spørsmål om søknaden, vil du bli kontaktet av finansministeren.",
+      " ",
+      "PDF-skjema er vedlagt til denne e-posten."
     );
 
     if (budgetImages.length > 0) {
       userEmailContent.push(
-        " ",
-        "Budsjettbilder er vedlagt til denne e-posten."
+        "Budsjettbilder er også vedlagt som separate filer."
       );
     }
 
-    // Send emails
+    // Send emails with PDF and images attached
+    const attachments = [...budgetImages, fileUrl];
     const [{ error: receiverError }, { error: userError }] = await Promise.all([
       sendEmail(
         ["finansminister@tihlde.org"],
         "Ny søknad om støtte",
         financeEmailContent,
-        budgetImages
+        attachments
       ),
       sendEmail(
         [email],
         "Kvittering for søknad om støtte",
         userEmailContent,
-        budgetImages
+        attachments
       ),
     ]);
 
@@ -128,6 +180,10 @@ export async function POST(req: Request) {
     }
 
     console.log("Begge e-poster sendt vellykket");
+
+    console.log("Sletter midlertidig PDF-fil...");
+    await fs.unlink(fullPath);
+    console.log("Midlertidig fil slettet");
   } catch (error) {
     console.error("Error in SUPPORT request: ", error);
     if (error instanceof Error) {
