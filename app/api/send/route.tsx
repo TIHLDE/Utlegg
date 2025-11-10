@@ -1,6 +1,7 @@
 "use server";
 
 import ReactPDF from "@react-pdf/renderer";
+import { heicTo } from "heic-to";
 
 import Pdf from "../../template/pdf";
 import path from "path";
@@ -23,6 +24,62 @@ export async function POST(req: Request) {
     const year = formData.get("year") as string;
     const ccEmail = formData.get("ccEmail") as string | null;
     const urlsArray = JSON.parse(urls) as string[];
+
+    const normalizedReceipts = await Promise.all(
+      urlsArray.map(async (receiptUrl) => {
+        const response = await fetch(receiptUrl);
+
+        if (!response.ok) {
+          throw new Error(`Kunne ikke hente kvittering: ${receiptUrl}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        let buffer = Buffer.from(arrayBuffer);
+        let mimeType =
+          response.headers.get("content-type") ||
+          (receiptUrl.toLowerCase().endsWith(".png")
+            ? "image/png"
+            : receiptUrl.toLowerCase().endsWith(".jpg") ||
+              receiptUrl.toLowerCase().endsWith(".jpeg")
+            ? "image/jpeg"
+            : receiptUrl.toLowerCase().endsWith(".webp")
+            ? "image/webp"
+            : receiptUrl.toLowerCase().endsWith(".gif")
+            ? "image/gif"
+            : receiptUrl.toLowerCase().endsWith(".bmp")
+            ? "image/bmp"
+            : "");
+
+        const shouldConvertToJpeg =
+          mimeType.includes("heic") ||
+          mimeType.includes("heif") ||
+          receiptUrl.toLowerCase().endsWith(".heic") ||
+          receiptUrl.toLowerCase().endsWith(".heif");
+
+        if (shouldConvertToJpeg) {
+          const heicBlob = new Blob([buffer], {
+            type: mimeType || "image/heic",
+          });
+
+          const convertedBlob = await heicTo({
+            blob: heicBlob,
+            type: "image/jpeg",
+            quality: 0.9,
+          });
+
+          const convertedArrayBuffer = await convertedBlob.arrayBuffer();
+          buffer = Buffer.from(convertedArrayBuffer);
+          mimeType = "image/jpeg";
+        }
+
+        if (!mimeType) {
+          mimeType = "image/jpeg";
+        }
+
+        const base64Data = buffer.toString("base64");
+        return `data:${mimeType};base64,${base64Data}`;
+      })
+    );
     const storePath = path.join(process.cwd(), "public");
     const fileName = `-${username}.pdf`;
     const fullPath = path.join(storePath, fileName);
@@ -36,7 +93,7 @@ export async function POST(req: Request) {
         description={description}
         accountNumber={accountNumber}
         signature={`${username}: ${study} - ${year}`}
-        receipts={urlsArray}
+        receipts={normalizedReceipts}
       />,
       fullPath
     );
@@ -71,7 +128,7 @@ export async function POST(req: Request) {
     });
 
     const financeRecipients = [
-      "finansminister@tihlde.org",
+      "teknologiminister@tihlde.org",
       ...(ccEmail ? [ccEmail] : []),
     ];
 
