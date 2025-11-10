@@ -41,6 +41,7 @@ import FileUpload from "./upload";
 const Schema = z.object({
   name: z.string().nonempty(),
   email: z.string().email(),
+  ccEmail: z.union([z.literal(""), z.string().email()]),
   amount: z.string(),
   date: z.date(),
   description: z.string().nonempty(),
@@ -60,6 +61,14 @@ interface SendFormProps {
 export default function SendForm({ userToken, user }: SendFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [images, setImages] = useState<string[]>([]);
+
+  const ccEmailOptions = [
+    "okonomiansvarlig.index@tihlde.org",
+    "tokonomiansvarlig.sosialen@tihlde.org",
+    "okonomiansvarlig.nok@tihlde.org",
+    "okonomiansvarlig.kok@tihlde.org",
+    "okonomiansvarlig.promo@tihlde.org",
+  ];
 
   const formatAccountNumber = (value: string) => {
     // Remove all non-digit characters
@@ -85,6 +94,7 @@ export default function SendForm({ userToken, user }: SendFormProps) {
     defaultValues: {
       name: user?.first_name + " " + user?.last_name || "",
       email: user?.email || "",
+      ccEmail: "",
       accountNumber: "",
       amount: "",
       description: "",
@@ -102,6 +112,9 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       const data = new FormData();
       data.append("name", values.name);
       data.append("email", values.email);
+      if (values.ccEmail) {
+        data.append("ccEmail", values.ccEmail);
+      }
       data.append("amount", values.amount);
       data.append("date", values.date.toISOString());
       data.append("description", values.description);
@@ -127,6 +140,7 @@ export default function SendForm({ userToken, user }: SendFormProps) {
         date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
         description: "",
         accountNumber: "",
+        ccEmail: "",
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -238,48 +252,76 @@ export default function SendForm({ userToken, user }: SendFormProps) {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>
-                    Dato <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-[240px] pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: nb })
-                          ) : (
-                            <span>Velg en dato</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        locale={nb}
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormDescription>Dato for utlegget</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid md:grid-cols-2 gap-6 md:gap-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col h-full">
+                    <FormLabel>
+                      Dato <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "h-10 w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: nb })
+                            ) : (
+                              <span>Velg en dato</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          locale={nb}
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>Dato for utlegget</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="ccEmail"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col h-full">
+                    <FormLabel>Kopi til økonomiansvarlig (valgfritt)</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      >
+                        <option value="">Ingen kopi</option>
+                        {ccEmailOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormDescription>
+                      Legg til økonomiansvarlig på kopi for utlegget.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

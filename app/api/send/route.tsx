@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     const username = formData.get("username") as string;
     const study = formData.get("study") as string;
     const year = formData.get("year") as string;
+    const ccEmail = formData.get("ccEmail") as string | null;
     const urlsArray = JSON.parse(urls) as string[];
     const storePath = path.join(process.cwd(), "public");
     const fileName = `-${username}.pdf`;
@@ -69,9 +70,14 @@ export async function POST(req: Request) {
       day: "numeric",
     });
 
+    const financeRecipients = [
+      "finansminister@tihlde.org",
+      ...(ccEmail ? [ccEmail] : []),
+    ];
+
     const [{ error: recieverError }, { error: userError }] = await Promise.all([
       sendEmail(
-        ["finansminister@tihlde.org"],
+        financeRecipients,
         "Nytt utlegg til godkjenning",
         [
           "Hei Finansminister!",
