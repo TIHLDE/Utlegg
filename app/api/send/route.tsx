@@ -128,7 +128,7 @@ export async function POST(req: Request) {
     });
 
     const financeRecipients = [
-      "teknologiminister@tihlde.org",
+      "finansminister@tihlde.org",
       ...(ccEmail ? [ccEmail] : []),
     ];
 
