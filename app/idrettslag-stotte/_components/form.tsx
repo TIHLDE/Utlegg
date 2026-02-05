@@ -41,12 +41,15 @@ const Schema = z.object({
   summary: z.string().optional(),
 });
 
-interface SupportFormProps {
+interface IdrettslagFormProps {
   userToken: string;
   user: User | null;
 }
 
-export default function SupportForm({ userToken, user }: SupportFormProps) {
+export default function IdrettslagForm({
+  userToken,
+  user,
+}: IdrettslagFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [images, setImages] = useState<string[]>([]);
 
@@ -82,6 +85,7 @@ export default function SupportForm({ userToken, user }: SupportFormProps) {
       data.append("username", user?.user_id || "");
       data.append("study", user?.study.group.name || "");
       data.append("year", user?.studyyear.group.name || "");
+      data.append("formType", "idrettslag");
 
       const response = await fetch("/api/support", {
         method: "POST",
@@ -92,7 +96,7 @@ export default function SupportForm({ userToken, user }: SupportFormProps) {
         throw new Error("Det skjedde en feil. Prøv igjen senere.");
       }
 
-      toast.success("Søknaden om støtte ble sendt inn!");
+      toast.success("Søknaden om støtte for idrettslag ble sendt inn!");
       setImages([]);
       form.reset({
         groupName: "",
@@ -122,10 +126,10 @@ export default function SupportForm({ userToken, user }: SupportFormProps) {
     <Card className="w-full max-w-5xl">
       <CardHeader className="relative">
         <HandHeart className="absolute top-6 right-6 w-8 h-8 text-muted-foreground opacity-50" />
-        <CardTitle>Søknad om støtte</CardTitle>
+        <CardTitle>Søknad om støtte - idrettslag</CardTitle>
         <CardDescription>
-          Fyll ut skjemaet for å søke om økonomisk støtte til din gruppe eller
-          arrangement.
+          Fyll ut skjemaet for å søke om økonomisk støtte til din idrettsgruppe
+          eller arrangement.
         </CardDescription>
       </CardHeader>
       <CardContent>

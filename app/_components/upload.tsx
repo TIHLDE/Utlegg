@@ -31,9 +31,14 @@ const secondaryVariant = {
 interface FileUploadProps {
   userToken: string;
   setImages: Dispatch<SetStateAction<string[]>>;
+  labelText?: string;
 }
 
-export default function FileUpload({ userToken, setImages }: FileUploadProps) {
+export default function FileUpload({
+  userToken,
+  setImages,
+  labelText = "kvitteringer",
+}: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -248,7 +253,7 @@ export default function FileUpload({ userToken, setImages }: FileUploadProps) {
         </div>
         <div className="flex flex-col items-center justify-center">
           <p className="relative z-20 font-sans font-bold  text-neutral-300 text-base">
-            Velg kvitteringer
+            Velg {labelText}
           </p>
           <p className="relative z-20 font-sans font-normal  text-neutral-400 text-base mt-2">
             Slipp et bilde eller klikk for å laste opp
