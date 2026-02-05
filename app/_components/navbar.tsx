@@ -32,6 +32,12 @@ export default function Navbar({ isAuthenticated }: NavbarProps) {
             >
               Søk støtte
             </Link>
+            <Link
+              href="/idrettslag-stotte"
+              className="text-sm md:text-base hover:opacity-80 transition-opacity font-medium"
+            >
+              Støtte til idrettslag
+            </Link>
           </>
         )}
       </nav>

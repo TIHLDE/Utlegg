@@ -26,6 +26,15 @@ export default async function HomePage() {
             Søke støtte fra HS
           </Button>
         </Link>
+        <Link href="/idrettslag-stotte">
+          <Button
+            variant="action"
+            size="lg"
+            className="w-full sm:w-auto px-12 py-8 text-xl transition-opacity hover:opacity-80"
+          >
+            Søke støtte for idrettslag
+          </Button>
+        </Link>
       </div>
     </div>
   );

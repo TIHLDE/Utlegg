@@ -23,8 +23,15 @@ export async function POST(req: Request) {
     const username = formData.get("username") as string;
     const study = formData.get("study") as string;
     const year = formData.get("year") as string;
+    const formType = (formData.get("formType") as string) || "support";
 
     const budgetImages = JSON.parse(budgetImagesStr) as string[];
+
+    // Determine email recipient based on form type
+    const isidrettslag = formType === "idrettslag";
+    const recipientEmails = isidrettslag
+      ? ["lederidkom@tihlde.org"]
+      : ["finansminister@tihlde.org", "hs@tihlde.org"];
 
     // Generate PDF
     const storePath = path.join(process.cwd(), "public");
@@ -45,7 +52,7 @@ export async function POST(req: Request) {
         signature={`${username}: ${study} - ${year}`}
         budgetImages={budgetImages}
       />,
-      fullPath
+      fullPath,
     );
     console.log("PDF generert vellykket med budsjettbilder");
 
@@ -68,10 +75,16 @@ export async function POST(req: Request) {
     const fileUrl = data;
     console.log("PDF lastet opp, URL:", fileUrl);
 
-    // Build email content for the finance minister
+    // Build email content for the recipient
+    const recipientTitle = isidrettslag
+      ? "Hei Leder IdKom!"
+      : "Hei Finansminister!";
+    const formTypeLabel = isidrettslag
+      ? "søknad om støtte for idrettslag"
+      : "søknad om støtte";
     const financeEmailContent = [
-      "Hei Finansminister!",
-      `${name} har sendt inn en søknad om støtte. Se detaljer nedenfor:`,
+      recipientTitle,
+      `${name} har sendt inn en ${formTypeLabel}. Se detaljer nedenfor:`,
       " ",
       "--- SØKNADSDETALJER ---",
       `Navn: ${name}`,
@@ -98,7 +111,7 @@ export async function POST(req: Request) {
     if (budgetImages.length > 0) {
       financeEmailContent.push(
         " ",
-        `Antall budsjettbilder: ${budgetImages.length}`
+        `Antall budsjettbilder: ${budgetImages.length}`,
       );
     }
 
@@ -110,15 +123,16 @@ export async function POST(req: Request) {
 
     if (budgetImages.length > 0) {
       financeEmailContent.push(
-        "Budsjettbilder er også vedlagt som separate filer."
+        "Budsjettbilder er også vedlagt som separate filer.",
       );
     }
 
     // Build email content for the user
+    const recipientName = isidrettslag ? "Leder IdKom" : "finansministeren";
     const userEmailContent = [
       `Hei ${name},`,
       " ",
-      "Takk for at du sendte inn søknaden om støtte. Her er en oppsummering:",
+      `Takk for at du sendte inn søknaden om støtte${isidrettslag ? " for idrettslag" : ""}. Her er en oppsummering:`,
       " ",
       "--- DIN SØKNAD ---",
       `Gruppe: ${groupName}`,
@@ -140,37 +154,40 @@ export async function POST(req: Request) {
 
     userEmailContent.push(
       " ",
-      "Søknaden er sendt til finansministeren. Du vil få svar så snart som mulig.",
-      "Hvis det er noen spørsmål om søknaden, vil du bli kontaktet av finansministeren.",
+      `Søknaden er sendt til ${recipientName}. Du vil få svar så snart som mulig.`,
+      `Hvis det er noen spørsmål om søknaden, vil du bli kontaktet av ${recipientName}.`,
       " ",
-      "PDF-skjema er vedlagt til denne e-posten."
+      "PDF-skjema er vedlagt til denne e-posten.",
     );
 
     if (budgetImages.length > 0) {
       userEmailContent.push(
-        "Budsjettbilder er også vedlagt som separate filer."
+        "Budsjettbilder er også vedlagt som separate filer.",
       );
     }
 
     // Send emails with PDF and images attached
     const attachments = [...budgetImages, fileUrl];
+    const emailSubject = isidrettslag
+      ? "Ny søknad om støtte - idrettslag"
+      : "Ny søknad om støtte";
     const [{ error: receiverError }, { error: userError }] = await Promise.all([
       sendEmail(
-        ["finansminister@tihlde.org", "hs@tihlde.org"],
-        "Ny søknad om støtte",
+        recipientEmails,
+        emailSubject,
         financeEmailContent,
-        attachments
+        attachments,
       ),
       sendEmail(
         [email],
-        "Kvittering for søknad om støtte",
+        `Kvittering for søknad om støtte${isidrettslag ? " - idrettslag" : ""}`,
         userEmailContent,
-        attachments
+        attachments,
       ),
     ]);
 
     if (receiverError) {
-      console.error("E-post til finansminister feilet:", receiverError);
+      console.error(`E-post til mottaker feilet:`, receiverError);
       return new Response(null, { status: 500 });
     }
 
