@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     // Determine email recipient based on form type
     const isidrettslag = formType === "idrettslag";
     const recipientEmails = isidrettslag
-      ? ["lederidkom@tihlde.org"]
+      ? ["idkomleder@tihlde.org", "idkom@tihlde.org"]
       : ["finansminister@tihlde.org", "hs@tihlde.org"];
 
     // Generate PDF
