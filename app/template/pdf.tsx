@@ -14,6 +14,8 @@ interface PdfProps {
   date: string;
   description: string;
   accountNumber: string;
+  group: string;
+  budgetType: string;
   signature: string;
   receipts: string[];
 }
@@ -25,6 +27,8 @@ export default function Pdf({
   date,
   description,
   accountNumber,
+  group,
+  budgetType,
   signature,
   receipts,
 }: PdfProps) {
@@ -134,8 +138,18 @@ export default function Pdf({
             <Text style={styles.text}>{amount}</Text>
           </View>
         </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <Text style={styles.header}>Gruppe:</Text>
+            <Text style={styles.text}>{group}</Text>
+          </View>
+          <View style={styles.column}>
+            <Text style={styles.header}>Budsjetttype:</Text>
+            <Text style={styles.text}>{budgetType}</Text>
+          </View>
+        </View>
         <View style={styles.column}>
-          <Text style={styles.header}>Årsak til utlegg:</Text>
+          <Text style={styles.header}>Hva utlegget er for:</Text>
           <Text style={styles.text}>{description}</Text>
         </View>
         <View style={styles.column}>
