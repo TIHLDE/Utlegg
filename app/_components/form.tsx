@@ -46,10 +46,10 @@ const Schema = z.object({
   date: z.date(),
   group: z.string().nonempty(),
   budgetType: z.enum([
-    "sosialbudsjett",
-    "gruppebudsjett",
-    "godkjent søknad til HS",
-    "godkjent søknad fra Idkom",
+    "Sosialbudsjett",
+    "Gruppebudsjett",
+    "Godkjent søknad til HS",
+    "Godkjent søknad fra Idkom",
   ]),
   description: z.string().nonempty(),
   accountNumber: z
@@ -165,7 +165,7 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       accountNumber: "",
       amount: "",
       group: "",
-      budgetType: "sosialbudsjett",
+      budgetType: "Sosialbudsjett",
       description: "",
     },
   });
@@ -210,7 +210,7 @@ export default function SendForm({ userToken, user }: SendFormProps) {
         amount: "",
         date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
         group: "",
-        budgetType: "sosialbudsjett",
+        budgetType: "Sosialbudsjett",
         description: "",
         accountNumber: "",
         ccEmail: "",
