@@ -108,10 +108,29 @@ export default function Pdf({
     },
   });
 
-  // Parse date without timezone conversion to avoid day shift
-  const [year, month, day] = date.split("-").map(Number);
-  const dateObj = new Date(year, month - 1, day);
-  const formattedDate = dateObj.toLocaleDateString("nb-NO");
+  // Parse date from either "YYYY-MM-DD" or full ISO string "YYYY-MM-DDTHH:mm:ss.sssZ"
+  const getFormattedDate = (rawDate: string): string => {
+    if (!rawDate) {
+      return "Ugyldig dato";
+    }
+
+    // If we received an ISO string, use only the date part before the time
+    const datePart = rawDate.split("T")[0] ?? rawDate;
+    const [year, month, day] = datePart.split("-").map(Number);
+
+    if (!year || !month || !day) {
+      return "Ugyldig dato";
+    }
+
+    const dateObj = new Date(year, month - 1, day);
+    if (Number.isNaN(dateObj.getTime())) {
+      return "Ugyldig dato";
+    }
+
+    return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+  };
+
+  const formattedDate = getFormattedDate(date);
 
   return (
     <Document>

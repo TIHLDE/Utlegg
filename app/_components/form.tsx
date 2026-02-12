@@ -33,7 +33,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { nb } from "date-fns/locale";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import type { User } from "@/types";
 import FileUpload from "./upload";
@@ -56,7 +56,7 @@ const Schema = z.object({
     .string()
     .regex(
       /^\d{4}\s\d{2}\s\d{5}$/,
-      "Kontonummer må være i formatet xxxx xx xxxxx"
+      "Kontonummer må være i formatet xxxx xx xxxxx",
     ),
 });
 
@@ -68,6 +68,7 @@ interface SendFormProps {
 export default function SendForm({ userToken, user }: SendFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [images, setImages] = useState<string[]>([]);
+  const [datePickerOpen, setDatePickerOpen] = useState<boolean>(false);
 
   const ccEmailOptions = [
     "okonomiansvarlig.index@tihlde.org",
@@ -151,10 +152,24 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       return `${limited.slice(0, 4)} ${limited.slice(4)}`;
     } else {
       return `${limited.slice(0, 4)} ${limited.slice(4, 6)} ${limited.slice(
-        6
+        6,
       )}`;
     }
   };
+
+  const getValidDate = (date: Date | undefined | null): Date | undefined => {
+    if (!date) return undefined;
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      return date;
+    }
+    return undefined;
+  };
+
+  const defaultDate = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }, []);
 
   const form = useForm<z.infer<typeof Schema>>({
     resolver: zodResolver(Schema),
@@ -164,11 +179,21 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       ccEmail: "",
       accountNumber: "",
       amount: "",
+      date: defaultDate,
       group: "",
       budgetType: "Sosialbudsjett",
       description: "",
     },
   });
+
+  // Ensure date is always valid
+  useEffect(() => {
+    const currentDate = form.getValues("date");
+    if (!getValidDate(currentDate)) {
+      form.setValue("date", defaultDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit = async (values: z.infer<typeof Schema>) => {
     setIsLoading(true);
@@ -185,7 +210,10 @@ export default function SendForm({ userToken, user }: SendFormProps) {
         data.append("ccEmail", values.ccEmail);
       }
       data.append("amount", values.amount);
-      data.append("date", values.date.toISOString());
+      data.append(
+        "date",
+        `${values.date.getFullYear()}-${String(values.date.getMonth() + 1).padStart(2, "0")}-${String(values.date.getDate()).padStart(2, "0")}`
+      );
       data.append("group", values.group);
       data.append("budgetType", values.budgetType);
       data.append("description", values.description);
@@ -334,21 +362,28 @@ export default function SendForm({ userToken, user }: SendFormProps) {
                     <FormLabel>
                       Dato <span className="text-red-500">*</span>
                     </FormLabel>
-                    <Popover>
+                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant={"outline"}
                             className={cn(
                               "h-10 w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
+                              !field.value && "text-muted-foreground",
                             )}
                           >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: nb })
-                            ) : (
-                              <span>Velg en dato</span>
-                            )}
+                            {(() => {
+                              const validDate = getValidDate(field.value);
+                              if (!validDate) {
+                                return <span>Velg en dato</span>;
+                              }
+                              try {
+                                return format(validDate, "PPP", { locale: nb });
+                              } catch (error) {
+                                console.error("Date formatting error:", error, validDate);
+                                return <span>Velg en dato</span>;
+                              }
+                            })()}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -357,8 +392,13 @@ export default function SendForm({ userToken, user }: SendFormProps) {
                         <Calendar
                           locale={nb}
                           mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
+                          selected={getValidDate(field.value)}
+                          onSelect={(date) => {
+                            if (date) {
+                              field.onChange(date);
+                              setDatePickerOpen(false);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
