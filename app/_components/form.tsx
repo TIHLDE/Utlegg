@@ -44,6 +44,13 @@ const Schema = z.object({
   ccEmail: z.union([z.literal(""), z.string().email()]),
   amount: z.string(),
   date: z.date(),
+  group: z.string().nonempty(),
+  budgetType: z.enum([
+    "sosialbudsjett",
+    "gruppebudsjett",
+    "godkjent søknad til HS",
+    "godkjent søknad fra Idkom",
+  ]),
   description: z.string().nonempty(),
   accountNumber: z
     .string()
@@ -103,6 +110,33 @@ export default function SendForm({ userToken, user }: SendFormProps) {
     "okonomiansvarlig.volley@tihlde.org",
   ];
 
+  const groupOptions = [
+    "Beta",
+    "Drift",
+    "FadderKom",
+    "IdKom",
+    "JenteKom",
+    "JubKom",
+    "Native",
+    "Økom",
+    "Redaksjonen",
+    "Semikolon",
+    "HS",
+    "Fondet",
+    "Index",
+    "Sosialen",
+    "NoK",
+    "KoK",
+    "Promo",
+  ];
+
+  const budgetTypeOptions = [
+    "Sosialbudsjett",
+    "Gruppebudsjett",
+    "Godkjent søknad til HS",
+    "Godkjent søknad fra Idkom",
+  ] as const;
+
   const formatAccountNumber = (value: string) => {
     // Remove all non-digit characters
     const digits = value.replace(/\D/g, "");
@@ -130,6 +164,8 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       ccEmail: "",
       accountNumber: "",
       amount: "",
+      group: "",
+      budgetType: "sosialbudsjett",
       description: "",
     },
   });
@@ -150,6 +186,8 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       }
       data.append("amount", values.amount);
       data.append("date", values.date.toISOString());
+      data.append("group", values.group);
+      data.append("budgetType", values.budgetType);
       data.append("description", values.description);
       data.append("accountNumber", values.accountNumber.replace(/\s/g, ""));
       data.append("receipts", JSON.stringify(images));
@@ -171,6 +209,8 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       form.reset({
         amount: "",
         date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
+        group: "",
+        budgetType: "sosialbudsjett",
         description: "",
         accountNumber: "",
         ccEmail: "",
@@ -356,13 +396,68 @@ export default function SendForm({ userToken, user }: SendFormProps) {
               />
             </div>
 
+            <div className="grid md:grid-cols-2 gap-6 md:gap-4">
+              <FormField
+                control={form.control}
+                name="group"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col h-full">
+                    <FormLabel>
+                      Gruppe <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        required
+                      >
+                        <option value="">Velg gruppe</option>
+                        {groupOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="budgetType"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col h-full">
+                    <FormLabel>
+                      Budsjetttype <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        required
+                      >
+                        {budgetTypeOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Årsak for utlegg <span className="text-red-500">*</span>
+                    Hva utlegget er for <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
                     <Textarea
