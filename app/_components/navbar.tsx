@@ -38,6 +38,12 @@ export default function Navbar({ isAuthenticated }: NavbarProps) {
             >
               Støtte til idrettslag
             </Link>
+            <Link
+              href="/sak-til-hs"
+              className="text-sm md:text-base hover:opacity-80 transition-opacity font-medium"
+            >
+              Send inn sak til HS
+            </Link>
           </>
         )}
       </nav>
