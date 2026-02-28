@@ -81,7 +81,6 @@ export default function SakTilHsForm({ user, userToken }: SakTilHsFormProps) {
       if (values.caseType === "Vedtakssak" && values.recommendation) {
         data.append("recommendation", values.recommendation);
       }
-      data.append("formType", "sak-til-hs");
 
       const response = await fetch("/api/hs-case", {
         method: "POST",
@@ -277,8 +276,7 @@ export default function SakTilHsForm({ user, userToken }: SakTilHsFormProps) {
                 )}
               />
             )}
-
-<div>
+            <div>
               <FormLabel>Eventuelle vedlegg (bilder)</FormLabel>
               <FormDescription className="mb-2">
                 Last opp bilder for å støtte din sak
@@ -294,7 +292,7 @@ export default function SakTilHsForm({ user, userToken }: SakTilHsFormProps) {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {images.map((url, index) => (
                   <div key={index} className="relative">
-                    <Image src={url} alt="budget" height={200} width={400} />
+                    <Image src={url} alt="vedlegg" height={200} width={400} />
                     <button
                       onClick={() => removeImage(url)}
                       type="button"

@@ -34,12 +34,6 @@ export default function BoardCasePdf({
       padding: 40,
       position: "relative",
     },
-    section: {
-      margin: 10,
-      padding: 10,
-      flexGrow: 1,
-      textAlign: "center",
-    },
     column: {
       display: "flex",
       flexDirection: "column",
@@ -138,7 +132,7 @@ export default function BoardCasePdf({
           </View>
         )}
 
-{images.length > 0 && (
+        {images.length > 0 && (
           <View style={styles.column}>
             <Text style={styles.header}>Vedlegg:</Text>
             {images.map((image, index) => (
