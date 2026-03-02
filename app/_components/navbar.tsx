@@ -17,7 +17,7 @@ export default function Navbar({ isAuthenticated }: NavbarProps) {
         <h1 className="text-xl md:text-2xl font-bold">Utlegg</h1>
       </Link>
 
-      <nav className="flex items-center justify-center gap-4 md:gap-6">
+      <nav className="flex items-center justify-center gap-4 md:gap-6 whitespace-nowrap">
         {isAuthenticated && (
           <>
             <Link
