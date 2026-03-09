@@ -18,13 +18,16 @@ export default function Logout() {
     return (
       <Button
         variant="action"
-        size="icon"
+        size="lg"
         onClick={handleLogout}
       >
         {status === "pending"
             ? <Loader2 className="h-[1.2rem] w-[1.2rem] animate-spin" />
             : <LogOut className="h-[1.2rem] w-[1.2rem]" />
         }
+        Logg ut
       </Button>  
     );
 };
+
+

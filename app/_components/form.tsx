@@ -285,7 +285,7 @@ export default function SendForm({ userToken, user }: SendFormProps) {
     <Card className="w-full max-w-5xl">
       <CardHeader className="relative">
         <Receipt className="absolute top-6 right-6 w-8 h-8 text-muted-foreground opacity-50" />
-        <CardTitle>Send utleggskjema til TIHLDE!</CardTitle>
+        <CardTitle className="pr-16">Send utleggskjema til TIHLDE!</CardTitle>
         <CardDescription>
           Fyll ut skjemaet og last opp kvitteringer, for å få refundert pengene.
         </CardDescription>

@@ -96,7 +96,7 @@ export default function IdrettslagForm({
         throw new Error("Det skjedde en feil. Prøv igjen senere.");
       }
 
-      toast.success("Søknaden om støtte for idrettslag ble sendt inn!");
+      toast.success("Søknaden om støtte for idrettsgruppe ble sendt inn!");
       setImages([]);
       form.reset({
         groupName: "",
@@ -126,7 +126,7 @@ export default function IdrettslagForm({
     <Card className="w-full max-w-5xl">
       <CardHeader className="relative">
         <HandHeart className="absolute top-6 right-6 w-8 h-8 text-muted-foreground opacity-50" />
-        <CardTitle>Søknad om støtte - idrettslag</CardTitle>
+        <CardTitle>Søknad om støtte - idrettsgruppe</CardTitle>
         <CardDescription>
           Fyll ut skjemaet for å søke om økonomisk støtte til din idrettsgruppe
           eller arrangement.
