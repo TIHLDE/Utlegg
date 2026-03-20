@@ -13,28 +13,28 @@ export default async function HomePage() {
           title="Sende inn utlegg"
           description="Fyll ut skjemaet og last opp kvittering for refusjon."
           icon={Receipt}
-          ctaLabel="Sende inn"
+          ctaLabel="Send inn"
         />
         <ActionCardLink
           href="/soknad-om-stotte"
           title="Søke støtte fra HS"
           description="Send inn søknad om økonomisk støtte til arrangement."
           icon={BadgeDollarSign}
-          ctaLabel="Sende inn"
+          ctaLabel="Send inn"
         />
         <ActionCardLink
           href="/idrettslag-stotte"
-          title="Søke støtte for idrettslag"
-          description="Søk støtte til aktivitet, utstyr eller arrangement i idrettslag."
+          title="Søke støtte for idrettsgruppe"
+          description="Søk støtte til aktivitet, utstyr eller arrangement til idrettsgruppen."
           icon={Trophy}
-          ctaLabel="Sende inn"
+          ctaLabel="Send inn"
         />
         <ActionCardLink
           href="/sak-til-hs"
           title="Sende en sak til HS"
           description="Send inn en sak du ønsker at HS skal behandle."
           icon={FileText}
-          ctaLabel="Sende inn"
+          ctaLabel="Send inn"
         />
       </div>
     </div>
