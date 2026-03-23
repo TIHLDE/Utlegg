@@ -12,7 +12,7 @@ export default function LinkedinNavigation() {
             <a
                 rel="noreferrer noopener"
                 target="_blank"
-                href="https://www.linkedin.com/in/mads-kristian-nylund-b9871921b/"
+                href="https://www.linkedin.com/in/mathias-str%C3%B8m/"
             >
                 <LinkedinIcon className="w-6 h-6" />    
             </a>

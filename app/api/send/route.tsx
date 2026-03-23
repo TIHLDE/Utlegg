@@ -18,6 +18,8 @@ export async function POST(req: Request) {
     const date = formData.get("date") as string;
     const description = formData.get("description") as string;
     const accountNumber = formData.get("accountNumber") as string;
+    const group = formData.get("group") as string;
+    const budgetType = formData.get("budgetType") as string;
     const urls = formData.get("receipts") as string;
     const username = formData.get("username") as string;
     const study = formData.get("study") as string;
@@ -92,6 +94,8 @@ export async function POST(req: Request) {
         date={date}
         description={description}
         accountNumber={accountNumber}
+        group={group}
+        budgetType={budgetType}
         signature={`${username}: ${study} - ${year}`}
         receipts={normalizedReceipts}
       />,
@@ -143,13 +147,15 @@ export async function POST(req: Request) {
           "--- UTLEGGSDETALJER ---",
           `Navn: ${name}`,
           `E-post: ${email}`,
+          `Gruppe: ${group}`,
+          `Budsjetttype: ${budgetType}`,
           `Beløp: ${amount} NOK`,
           `Kontonummer: ${accountNumber}`,
           `Dato: ${formattedDate}`,
           `Studie: ${study}`,
           `Årskull: ${year}`,
           " ",
-          "Årsak til utlegg:",
+          "Hva utlegget er for:",
           description,
           " ",
           `Antall kvitteringer: ${urlsArray.length}`,
@@ -167,11 +173,13 @@ export async function POST(req: Request) {
           "Takk for at du sendte inn utlegget ditt. Her er en oppsummering:",
           " ",
           "--- DITT UTLEGG ---",
+          `Gruppe: ${group}`,
+          `Budsjetttype: ${budgetType}`,
           `Beløp: ${amount} NOK`,
           `Kontonummer: ${accountNumber}`,
           `Dato: ${formattedDate}`,
           " ",
-          "Årsak:",
+          "Hva utlegget er for:",
           description,
           " ",
           `Kvitteringer: ${urlsArray.length} stk`,

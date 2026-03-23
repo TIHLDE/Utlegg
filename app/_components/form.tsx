@@ -33,7 +33,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { nb } from "date-fns/locale";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import type { User } from "@/types";
 import FileUpload from "./upload";
@@ -44,12 +44,19 @@ const Schema = z.object({
   ccEmail: z.union([z.literal(""), z.string().email()]),
   amount: z.string(),
   date: z.date(),
+  group: z.string().nonempty(),
+  budgetType: z.enum([
+    "Sosialbudsjett",
+    "Gruppebudsjett",
+    "Godkjent søknad til HS",
+    "Godkjent søknad fra Idkom",
+  ]),
   description: z.string().nonempty(),
   accountNumber: z
     .string()
     .regex(
       /^\d{4}\s\d{2}\s\d{5}$/,
-      "Kontonummer må være i formatet xxxx xx xxxxx"
+      "Kontonummer må være i formatet xxxx xx xxxxx",
     ),
 });
 
@@ -61,6 +68,7 @@ interface SendFormProps {
 export default function SendForm({ userToken, user }: SendFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [images, setImages] = useState<string[]>([]);
+  const [datePickerOpen, setDatePickerOpen] = useState<boolean>(false);
 
   const ccEmailOptions = [
     "okonomiansvarlig.index@tihlde.org",
@@ -103,6 +111,56 @@ export default function SendForm({ userToken, user }: SendFormProps) {
     "okonomiansvarlig.volley@tihlde.org",
   ];
 
+  const groupOptions = [
+    "Beta",
+    "Drift",
+    "FadderKom",
+    "IdKom",
+    "JenteKom",
+    "JubKom",
+    "Native",
+    "Økom",
+    "Redaksjonen",
+    "Semikolon",
+    "HS",
+    "Fondet",
+    "Index",
+    "Sosialen",
+    "NoK",
+    "KoK",
+    "Promo",
+    "Basket",
+    "Biljard",
+    "Dart",
+    "DiskGolf",
+    "Pythons Handball",
+    "Klatring",
+    "Plask",
+    "Poker",
+    "FotballHerrer",
+    "Pythons FotballDamer",
+    "RettOgVrang",
+    "Smash",
+    "Spring",
+    "TIHLDEpodden",
+    "Klask",
+    "FotballOgF1",
+    "Golf",
+    "Startup",
+    "BH",
+    "Ski",
+    "Utveksling",
+    "Turtorial",
+    "Volley",
+  ];
+
+  const budgetTypeOptions = [
+    "Sosialbudsjett",
+    "Gruppebudsjett",
+    "Godkjent søknad til HS",
+    "Godkjent søknad fra Idkom",
+  ] as const;
+
   const formatAccountNumber = (value: string) => {
     // Remove all non-digit characters
     const digits = value.replace(/\D/g, "");
@@ -117,10 +175,24 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       return `${limited.slice(0, 4)} ${limited.slice(4)}`;
     } else {
       return `${limited.slice(0, 4)} ${limited.slice(4, 6)} ${limited.slice(
-        6
+        6,
       )}`;
     }
   };
+
+  const getValidDate = (date: Date | undefined | null): Date | undefined => {
+    if (!date) return undefined;
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      return date;
+    }
+    return undefined;
+  };
+
+  const defaultDate = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }, []);
 
   const form = useForm<z.infer<typeof Schema>>({
     resolver: zodResolver(Schema),
@@ -130,9 +202,21 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       ccEmail: "",
       accountNumber: "",
       amount: "",
+      date: defaultDate,
+      group: "",
+      budgetType: "Sosialbudsjett",
       description: "",
     },
   });
+
+  // Ensure date is always valid
+  useEffect(() => {
+    const currentDate = form.getValues("date");
+    if (!getValidDate(currentDate)) {
+      form.setValue("date", defaultDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit = async (values: z.infer<typeof Schema>) => {
     setIsLoading(true);
@@ -149,7 +233,12 @@ export default function SendForm({ userToken, user }: SendFormProps) {
         data.append("ccEmail", values.ccEmail);
       }
       data.append("amount", values.amount);
-      data.append("date", values.date.toISOString());
+      data.append(
+        "date",
+        `${values.date.getFullYear()}-${String(values.date.getMonth() + 1).padStart(2, "0")}-${String(values.date.getDate()).padStart(2, "0")}`
+      );
+      data.append("group", values.group);
+      data.append("budgetType", values.budgetType);
       data.append("description", values.description);
       data.append("accountNumber", values.accountNumber.replace(/\s/g, ""));
       data.append("receipts", JSON.stringify(images));
@@ -171,6 +260,8 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       form.reset({
         amount: "",
         date: set(new Date(), { hours: 0, minutes: 0, seconds: 0 }),
+        group: "",
+        budgetType: "Sosialbudsjett",
         description: "",
         accountNumber: "",
         ccEmail: "",
@@ -194,7 +285,7 @@ export default function SendForm({ userToken, user }: SendFormProps) {
     <Card className="w-full max-w-5xl">
       <CardHeader className="relative">
         <Receipt className="absolute top-6 right-6 w-8 h-8 text-muted-foreground opacity-50" />
-        <CardTitle>Send utleggskjema til TIHLDE!</CardTitle>
+        <CardTitle className="pr-16">Send utleggskjema til TIHLDE!</CardTitle>
         <CardDescription>
           Fyll ut skjemaet og last opp kvitteringer, for å få refundert pengene.
         </CardDescription>
@@ -294,21 +385,28 @@ export default function SendForm({ userToken, user }: SendFormProps) {
                     <FormLabel>
                       Dato <span className="text-red-500">*</span>
                     </FormLabel>
-                    <Popover>
+                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant={"outline"}
                             className={cn(
                               "h-10 w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
+                              !field.value && "text-muted-foreground",
                             )}
                           >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: nb })
-                            ) : (
-                              <span>Velg en dato</span>
-                            )}
+                            {(() => {
+                              const validDate = getValidDate(field.value);
+                              if (!validDate) {
+                                return <span>Velg en dato</span>;
+                              }
+                              try {
+                                return format(validDate, "PPP", { locale: nb });
+                              } catch (error) {
+                                console.error("Date formatting error:", error, validDate);
+                                return <span>Velg en dato</span>;
+                              }
+                            })()}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -317,8 +415,13 @@ export default function SendForm({ userToken, user }: SendFormProps) {
                         <Calendar
                           locale={nb}
                           mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
+                          selected={getValidDate(field.value)}
+                          onSelect={(date) => {
+                            if (date) {
+                              field.onChange(date);
+                              setDatePickerOpen(false);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -356,13 +459,68 @@ export default function SendForm({ userToken, user }: SendFormProps) {
               />
             </div>
 
+            <div className="grid md:grid-cols-2 gap-6 md:gap-4">
+              <FormField
+                control={form.control}
+                name="group"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col h-full">
+                    <FormLabel>
+                      Gruppe <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        required
+                      >
+                        <option value="">Velg gruppe</option>
+                        {groupOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="budgetType"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col h-full">
+                    <FormLabel>
+                      Budsjetttype <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        required
+                      >
+                        {budgetTypeOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Årsak for utlegg <span className="text-red-500">*</span>
+                    Hva utlegget er for <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
                     <Textarea
