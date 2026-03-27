@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatNorwegianBankAccountDisplay } from "@/lib/format-norwegian-bank-account";
 import { format, set } from "date-fns";
 import { CalendarIcon, Loader2, Trash, Receipt } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -55,8 +56,8 @@ const Schema = z.object({
   accountNumber: z
     .string()
     .regex(
-      /^\d{4}\s\d{2}\s\d{5}$/,
-      "Kontonummer må være i formatet xxxx xx xxxxx",
+      /^\d{4}\.\d{2}\.\d{5}$/,
+      "Kontonummer må være i formatet xxxx.xx.xxxxx",
     ),
 });
 
@@ -161,25 +162,6 @@ export default function SendForm({ userToken, user }: SendFormProps) {
     "Godkjent søknad fra Idkom",
   ] as const;
 
-  const formatAccountNumber = (value: string) => {
-    // Remove all non-digit characters
-    const digits = value.replace(/\D/g, "");
-
-    // Limit to 11 digits
-    const limited = digits.slice(0, 11);
-
-    // Format as xxxx xx xxxxx
-    if (limited.length <= 4) {
-      return limited;
-    } else if (limited.length <= 6) {
-      return `${limited.slice(0, 4)} ${limited.slice(4)}`;
-    } else {
-      return `${limited.slice(0, 4)} ${limited.slice(4, 6)} ${limited.slice(
-        6,
-      )}`;
-    }
-  };
-
   const getValidDate = (date: Date | undefined | null): Date | undefined => {
     if (!date) return undefined;
     if (date instanceof Date && !isNaN(date.getTime())) {
@@ -240,7 +222,10 @@ export default function SendForm({ userToken, user }: SendFormProps) {
       data.append("group", values.group);
       data.append("budgetType", values.budgetType);
       data.append("description", values.description);
-      data.append("accountNumber", values.accountNumber.replace(/\s/g, ""));
+      data.append(
+        "accountNumber",
+        values.accountNumber.replace(/\D/g, ""),
+      );
       data.append("receipts", JSON.stringify(images));
       data.append("username", user?.user_id || "");
       data.append("study", user?.study.group.name || "");
@@ -365,7 +350,9 @@ export default function SendForm({ userToken, user }: SendFormProps) {
                         type="text"
                         inputMode="numeric"
                         onChange={(e) => {
-                          const formatted = formatAccountNumber(e.target.value);
+                          const formatted = formatNorwegianBankAccountDisplay(
+                            e.target.value,
+                          );
                           field.onChange(formatted);
                         }}
                       />

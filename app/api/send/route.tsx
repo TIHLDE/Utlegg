@@ -7,6 +7,7 @@ import Pdf from "../../template/pdf";
 import path from "path";
 import fs from "fs/promises";
 import { sendEmail, uploadFile } from "./util";
+import { formatNorwegianBankAccountDisplay } from "@/lib/format-norwegian-bank-account";
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +19,8 @@ export async function POST(req: Request) {
     const date = formData.get("date") as string;
     const description = formData.get("description") as string;
     const accountNumber = formData.get("accountNumber") as string;
+    const accountNumberDisplay =
+      formatNorwegianBankAccountDisplay(accountNumber);
     const group = formData.get("group") as string;
     const budgetType = formData.get("budgetType") as string;
     const urls = formData.get("receipts") as string;
@@ -93,7 +96,7 @@ export async function POST(req: Request) {
         amount={amount}
         date={date}
         description={description}
-        accountNumber={accountNumber}
+        accountNumber={accountNumberDisplay}
         group={group}
         budgetType={budgetType}
         signature={`${username}: ${study} - ${year}`}
@@ -150,7 +153,7 @@ export async function POST(req: Request) {
           `Gruppe: ${group}`,
           `Budsjetttype: ${budgetType}`,
           `Beløp: ${amount} NOK`,
-          `Kontonummer: ${accountNumber}`,
+          `Kontonummer: ${accountNumberDisplay}`,
           `Dato: ${formattedDate}`,
           `Studie: ${study}`,
           `Årskull: ${year}`,
@@ -176,7 +179,7 @@ export async function POST(req: Request) {
           `Gruppe: ${group}`,
           `Budsjetttype: ${budgetType}`,
           `Beløp: ${amount} NOK`,
-          `Kontonummer: ${accountNumber}`,
+          `Kontonummer: ${accountNumberDisplay}`,
           `Dato: ${formattedDate}`,
           " ",
           "Hva utlegget er for:",
