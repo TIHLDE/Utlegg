@@ -29,9 +29,6 @@ jobs:
   deploy:
     needs: build
     if: github.event_name != 'pull_request'
-    uses: TIHLDE/tihlde-workflows/.github/workflows/_notify_deploy.yml@main
-    with:
-      tag: dev
-      environment: dev
+    uses: TIHLDE/tihlde-workflows/.github/workflows/_notify_deploy.yml@v1.1.3
     secrets:
       DEPLOY_RECEIVER_TOKEN: ${{ secrets.DEPLOY_RECEIVER_TOKEN }}
